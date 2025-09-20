@@ -145,7 +145,7 @@ void OS_Application_Startup(void)
 {
     if (CFE_PSP_Setup() != RTEMS_SUCCESSFUL)
     {
-        CFE_PSP_Panic(CFE_PSP_ERROR);
+        CFE_PSP_Panic(CFE_PSP_ERROR); /* Unreachable currently - CFE_PSP_Setup always returns RTEMS_SUCCESSFUL */
     }
 
     /*

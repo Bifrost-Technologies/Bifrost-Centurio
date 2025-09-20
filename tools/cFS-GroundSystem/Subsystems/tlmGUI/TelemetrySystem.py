@@ -177,7 +177,8 @@ if __name__ == '__main__':
     # Set defaults for the arguments
     #
     tlm_def_file = f"{ROOTDIR}/telemetry-pages.txt"
-    endian = "L"
+    # Default to big-endian to match TO_LAB's EDS (network byte order)
+    endian = "B"
     subscription = ""
 
     #

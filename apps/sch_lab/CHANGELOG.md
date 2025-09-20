@@ -1,5 +1,41 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev29
+- updating sch_lab to use new versioning system
+- See <https://github.com/nasa/sch_lab/pull/161>
+
+## Development Build: v2.5.0-rc4+dev83
+- SC_1HZ_WAKEUP_MID deprecated
+- CFE_TIME_1HZ_CMD_MID deprecated
+- See <https://github.com/nasa/sch_lab/pull/164> and <https://github.com/nasa/sch_lab/pull/163>
+
+## Development Build: v2.5.0-rc4+dev75
+- correct inclusion for SCH_LAB example table
+- See <https://github.com/nasa/sch_lab/pull/156>
+
+## Development Build: v2.5.0-rc4+dev71
+- Standardize naming of SCH_LAB functions/macros
+- Call CFE_ES_ExitApp with RunStatus rather than internal status variable
+- Convert int32 return codes and variables to CFE_Status_t
+- Remove component-specific cFE header #includes
+- See <https://github.com/nasa/sch_lab/pull/129>, <https://github.com/nasa/sch_lab/pull/149>, <https://github.com/nasa/sch_lab/pull/142>, and <https://github.com/nasa/sch_lab/pull/134>
+
+## Development Build: v2.5.0-rc4+dev61
+- implement header file convention for SCH_LAB
+- See <https://github.com/nasa/sch_lab/pull/151>
+
+## Development Build: v2.5.0-rc4+dev57
+- Add support for cmds w/args
+- See <https://github.com/nasa/sch_lab/pull/144>
+
+## Development Build: 2.5.0-rc4+dev53
+- adjust table based on apps present
+- See <https://github.com/nasa/sch_lab/pull/139>
+
+## Development Build: 2.5.0-rc4+dev49
+- update cmake recipe
+- See <https://github.com/nasa/sch_lab/pull/136>
+
 ## Development Build: 2.5.0-rc4+dev45
 - Remove redundant comments
 - See <https://github.com/nasa/sch_lab/pull/126>

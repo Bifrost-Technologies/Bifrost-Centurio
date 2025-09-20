@@ -347,15 +347,14 @@ int32 OS_TimeBaseCreate_Impl(const OS_object_token_t *token)
 
     /* cppcheck-suppress unreadVariable // intentional use of other union member */
     arg.id      = OS_ObjectIdFromToken(token);
-    return_code = OS_Posix_InternalTaskCreate_Impl(&local->handler_thread, OSAL_PRIORITY_C(0), 0,
-                                                   OS_TimeBasePthreadEntry, arg.opaque_arg);
+    return_code = OS_Posix_InternalTaskCreate_Impl(&local->handler_thread, OSAL_PRIORITY_C(0), OSAL_TASK_STACK_ALLOCATE,
+                                                   PTHREAD_STACK_MIN, OS_TimeBasePthreadEntry, arg.opaque_arg);
     if (return_code != OS_SUCCESS)
     {
         return return_code;
     }
 
     local->assigned_signal = 0;
-    clock_gettime(OS_PREFERRED_CLOCK, &local->softsleep);
 
     /*
      * Set up the necessary OS constructs

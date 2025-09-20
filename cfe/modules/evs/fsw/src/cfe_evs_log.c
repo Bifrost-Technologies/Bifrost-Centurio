@@ -42,20 +42,15 @@ void EVS_AddLog(CFE_EVS_LongEventTlm_t *EVS_PktPtr)
     /* Serialize access to event log control variables */
     OS_MutSemTake(CFE_EVS_Global.EVS_SharedDataMutexID);
 
-    if ((CFE_EVS_Global.EVS_LogPtr->LogFullFlag == true) &&
-        (CFE_EVS_Global.EVS_LogPtr->LogMode == CFE_EVS_LogMode_DISCARD))
+    if (CFE_EVS_Global.EVS_LogPtr->LogFullFlag == true)
     {
-        /* If log is full and in discard mode, just count the event */
         CFE_EVS_Global.EVS_LogPtr->LogOverflowCounter++;
     }
-    else
-    {
-        if (CFE_EVS_Global.EVS_LogPtr->LogFullFlag == true)
-        {
-            /* If log is full and in wrap mode, count it and store it */
-            CFE_EVS_Global.EVS_LogPtr->LogOverflowCounter++;
-        }
 
+    /* If the log is not full, _or_ if it is in OVERWRITE mode, add the event to the log */
+    if ((CFE_EVS_Global.EVS_LogPtr->LogFullFlag == false) ||
+        (CFE_EVS_Global.EVS_LogPtr->LogMode == CFE_EVS_LogMode_OVERWRITE))
+    {
         /* Copy the event data to the next available entry in the log */
         memcpy(&CFE_EVS_Global.EVS_LogPtr->LogEntry[CFE_EVS_Global.EVS_LogPtr->Next], EVS_PktPtr, sizeof(*EVS_PktPtr));
 
@@ -215,6 +210,12 @@ int32 CFE_EVS_WriteLogDataFileCmd(const CFE_EVS_WriteLogDataFileCmd_t *data)
                               "Write Log File Command Error: OS_write = %ld, filename = %s", (long)OsStatus,
                               LogFilename);
             }
+        }
+        else
+        {
+            EVS_SendEvent(CFE_EVS_WRITE_HEADER_ERR_EID, CFE_EVS_EventType_ERROR,
+                          "Write File Header to Log File Error: WriteHdr RC: %d, Expected: %d, filename = %s",
+                          (int)BytesWritten, (int)sizeof(LogFileHdr), LogFilename);
         }
 
         OS_close(LogFileHandle);

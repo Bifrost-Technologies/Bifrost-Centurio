@@ -39,7 +39,7 @@
 #include "cfe_perfids.h"
 #include "cfe_tbl_task.h"
 #include "cfe_tbl_task_cmds.h"
-#include "cfe_tbl_events.h"
+#include "cfe_tbl_eventids.h"
 #include "cfe_tbl_msg.h"
 
 /*********************  Macro and Constant Type Definitions   ***************************/
@@ -48,147 +48,18 @@
 #define CFE_TBL_NOT_FOUND   (-1)
 #define CFE_TBL_END_OF_LIST (CFE_TBL_Handle_t)0xFFFF
 
+/**
+ * Function type used with access descriptor iterator
+ *
+ * The access descriptor iterator will invoke the supplied function
+ * for every descriptor associated with the table registry entry
+ *
+ * \param AccDescPtr Pointer to the current access descriptor
+ * \param Arg Opaque argument from caller (passed through)
+ */
+typedef void (*const CFE_TBL_AccessDescFunc_t)(CFE_TBL_AccessDescriptor_t *AccDescPtr, void *Arg);
+
 /*****************************  Function Prototypes   **********************************/
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Validates specified handle to ensure legality
-**
-** \par Description
-**        Validates handle given by calling App to Table API. Validation
-**        includes ensuring the value is within an acceptable range and
-**        the Access Descriptor that it identifies is being "used".
-**
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \param[in]  TblHandle  - Handle to be validated
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \retval #CFE_TBL_ERR_INVALID_HANDLE      \copydoc CFE_TBL_ERR_INVALID_HANDLE
-**
-*/
-int32 CFE_TBL_ValidateHandle(CFE_TBL_Handle_t TblHandle);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Determines whether handle is associated with calling Application
-**
-** \par Description
-**        Validates whether the calling application has the right to
-**        access the table identified with the given TblHandle.  Validation
-**        consists of verifying the calling Application's AppID, verifying
-**        the legitimacy of the given TblHandle, and checking to make sure
-**        the Access Descriptor identified by the TblHandle is associated
-**        with the calling Application.
-**
-** \par Assumptions, External Events, and Notes:
-**          None
-**
-** \param[in]  TblHandle Handle of table whose access is desired.
-**
-** \param[in, out]  AppIdPtr  Pointer to value that will hold AppID on return. *AppIdPtr is the AppID as obtained from
-*#CFE_ES_GetAppID
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \retval #CFE_ES_ERR_RESOURCEID_NOT_VALID \copydoc CFE_ES_ERR_RESOURCEID_NOT_VALID
-** \retval #CFE_TBL_ERR_INVALID_HANDLE      \copydoc CFE_TBL_ERR_INVALID_HANDLE
-** \retval #CFE_TBL_ERR_NO_ACCESS           \copydoc CFE_TBL_ERR_NO_ACCESS
-**
-*/
-int32 CFE_TBL_ValidateAccess(CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t *AppIdPtr);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Determines if calling application has the right to access specified table
-**
-** \par Description
-**        Validates whether the calling application has the right to
-**        access the table identified with the given TblHandle.  Validation
-**        consists of checking to make sure the Access Descriptor identified
-**        by the TblHandle is associated with the calling Application.
-**
-** \par Assumptions, External Events, and Notes:
-**        Note: The TblHandle and ThisAppId parameters are assumed to be valid.
-**
-** \param[in]  TblHandle Handle of table whose access is desired.
-**
-** \param[in]  ThisAppId Application ID of Application making the call
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \retval #CFE_TBL_ERR_NO_ACCESS           \copydoc CFE_TBL_ERR_NO_ACCESS
-**
-*/
-int32 CFE_TBL_CheckAccessRights(CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t ThisAppId);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Removes Access Descriptor from Table's linked list of Access Descriptors
-**
-** \par Description
-**        Removes the given Access Descriptor from the Linked List
-**        of Access Descriptors associated with the table specified
-**        in the Access Descriptor itself.
-**
-** \par Assumptions, External Events, and Notes:
-**        -# This function CAN block and should not be called by ISRs.
-**        -# This function assumes the Access Descriptor is completely
-**           filled out and the TblHandle has been validated.
-**
-** \param[in]  TblHandle Handle of Access Descriptor to be removed.
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-**
-*/
-int32 CFE_TBL_RemoveAccessLink(CFE_TBL_Handle_t TblHandle);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Obtains the data address for the specified table
-**
-** \par Description
-**        Validates the given TblHandle, finds the location of the
-**        Table data and returns the address to the data to the caller.
-**
-** \par Assumptions, External Events, and Notes:
-**        -# It is possible that an Application that was sharing a table
-**           would discover, upon making this call, that the table has
-**           been unregistered by another Application.  In this situation,
-**           this function would return #CFE_TBL_ERR_UNREGISTERED.
-**        -# ThisAppId parameter is assumed to be validated.
-**
-** \param[in, out]  TblPtr    Pointer to pointer that will hold address of data upon return. *TblPtr is the address of
-**                            the Table Data.
-** \param[in]  TblHandle Handle of Table whose address is needed.
-** \param[in]  ThisAppId AppID of application making the address request.
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \retval #CFE_TBL_ERR_INVALID_HANDLE      \copydoc CFE_TBL_ERR_INVALID_HANDLE
-** \retval #CFE_TBL_ERR_NO_ACCESS           \copydoc CFE_TBL_ERR_NO_ACCESS
-** \retval #CFE_TBL_ERR_UNREGISTERED        \copydoc CFE_TBL_ERR_UNREGISTERED
-**
-*/
-int32 CFE_TBL_GetAddressInternal(void **TblPtr, CFE_TBL_Handle_t TblHandle, CFE_ES_AppId_t ThisAppId);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Returns any pending non-error status code for the specified table.
-**
-** \par Description
-**        Returns any pending non-error status code for the specified table.
-**
-** \par Assumptions, External Events, and Notes:
-**        Note: This function assumes the TblHandle has been validated.
-**
-** \param[in]  TblHandle Handle of Table whose pending notifications are
-**                       to be returned.
-**
-** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
-** \retval #CFE_TBL_INFO_UPDATE_PENDING     \copydoc CFE_TBL_INFO_UPDATE_PENDING
-** \retval #CFE_TBL_INFO_UPDATED            \copydoc CFE_TBL_INFO_UPDATED
-**
-*/
-int32 CFE_TBL_GetNextNotification(CFE_TBL_Handle_t TblHandle);
 
 /*---------------------------------------------------------------------------------------*/
 /**
@@ -208,34 +79,6 @@ int32 CFE_TBL_GetNextNotification(CFE_TBL_Handle_t TblHandle);
 **
 */
 int16 CFE_TBL_FindTableInRegistry(const char *TblName);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Locates a free slot in the Table Registry.
-**
-** \par Description
-**        Locates a free slot in the Table Registry.
-**
-** \par Assumptions, External Events, and Notes:
-**        Note: This function assumes the registry has been locked.
-**
-** \retval #CFE_TBL_NOT_FOUND or Index into Table Registry of unused entry
-*/
-int16 CFE_TBL_FindFreeRegistryEntry(void);
-
-/*---------------------------------------------------------------------------------------*/
-/**
-** \brief Locates a free Access Descriptor in the Table Handles Array.
-**
-** \par Description
-**        Locates a free Access Descriptor in the Table Handles Array.
-**
-** \par Assumptions, External Events, and Notes:
-**        Note: This function assumes the registry has been locked.
-**
-** \retval #CFE_TBL_END_OF_LIST or Table Handle of unused Access Descriptor
-*/
-CFE_TBL_Handle_t CFE_TBL_FindFreeHandle(void);
 
 /*---------------------------------------------------------------------------------------*/
 /**
@@ -559,6 +402,348 @@ void CFE_TBL_ByteSwapUint32(uint32 *Uint32ToSwapPtr);
 void CFE_TBL_DumpRegistryEventHandler(void *Meta, CFE_FS_FileWriteEvent_t Event, int32 Status, uint32 RecordNum,
                                       size_t BlockSize, size_t Position);
 bool CFE_TBL_DumpRegistryGetter(void *Meta, uint32 RecordNum, void **Buffer, size_t *BufSize);
+
+/*
+ * Internal helper functions for CFE_TBL_Register()
+ *
+ * These functions execute the table registration process but are
+ * separated out into the most cohesive logical blocks of work.
+ *
+ */
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Validates the table name of a table to be registered
+**
+** \par Description
+**         Validates the length of a table name for a table that is being registered. It
+**         checks that the length of the name is not zero, nor too long (longer than
+**         CFE_MISSION_TBL_MAX_NAME_LENGTH).
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+** \retval #CFE_TBL_ERR_INVALID_NAME        \copydoc CFE_TBL_ERR_INVALID_NAME
+**
+*/
+CFE_Status_t CFE_TBL_ValidateTableName(const char *Name);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Validates the size of the table to be registered
+**
+** \par Description
+**         This function validates the size of the table that is being registered. It
+**         checks that the size is not zero, and that single/double-buffered tables are
+**         not requested to be of a size larger than their respective limits
+**         (CFE_PLATFORM_TBL_MAX_SNGL_TABLE_SIZE & CFE_PLATFORM_TBL_MAX_DBL_TABLE_SIZE).
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+** \retval #CFE_TBL_ERR_INVALID_SIZE        \copydoc CFE_TBL_ERR_INVALID_SIZE
+**
+*/
+CFE_Status_t CFE_TBL_ValidateTableSize(const char *Name, size_t Size, uint16 TblOptionFlags);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Validates the selected table options
+**
+** \par Description
+**         Validates the selected table options for a table that is being registered.
+**         User-defined table addresses cannot be double-buffered, load/dump or critical.
+**         Dump-only tables cannot be double-buffered or critical.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+** \retval #CFE_TBL_ERR_INVALID_OPTIONS     \copydoc CFE_TBL_ERR_INVALID_OPTIONS
+**
+*/
+CFE_Status_t CFE_TBL_ValidateTableOptions(const char *Name, uint16 TblOptionFlags);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Allocates memory for the table buffer
+**
+** \par Description
+**         Allocates a memory buffer for the table buffer of a table that is being registered.
+**         If successful, the buffer is zeroed out.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+**
+*/
+CFE_Status_t CFE_TBL_AllocateTableBuffer(CFE_TBL_RegistryRec_t *RegRecPtr, size_t Size);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Allocates the secondary memory buffer for a double-buffered table
+**
+** \par Description
+**         Allocates the secondary memory buffer for a double-buffered table that is
+**         being registered. If successful, the buffer is zeroed out, and the
+**         DoubleBuffered flag is set to true.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+**
+*/
+CFE_Status_t CFE_TBL_AllocateSecondaryBuffer(CFE_TBL_RegistryRec_t *RegRecPtr, size_t Size);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Initializes a Table Registry Entry
+**
+** \par Description
+**         Initializes a Table Registry Entry for a table that is being registered
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+*/
+void CFE_TBL_InitTableRegistryEntry(CFE_TBL_RegistryRec_t *RegRecPtr, size_t Size,
+                                    CFE_TBL_CallbackFuncPtr_t TblValidationFuncPtr, const char *TblName,
+                                    uint16 TblOptionFlags);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Restore the contents of a table from the Critical Data Store (if it exists)
+**
+** \par Description
+**          This function restores the contents of the specified table from the Critical
+**          Data Store (CDS), if a copy of the table contents exists there.
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+** \retval #CFE_SUCCESS                     \copydoc CFE_SUCCESS
+** \retval #CFE_TBL_INFO_RECOVERED_TBL      \copydoc CFE_TBL_INFO_RECOVERED_TBL
+**
+*/
+CFE_Status_t CFE_TBL_RestoreTableDataFromCDS(CFE_TBL_RegistryRec_t *RegRecPtr, const char *AppName, const char *Name,
+                                             CFE_TBL_CritRegRec_t *CritRegRecPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Register a table with the Critical Table Registry
+**
+** \par Description
+**        This function registers a table with the Critical Table Registry. The fields of
+**        the Critical Table Registry Record are initialized and then the data is copied
+**        to the Critical Data Store (CDS).
+**
+** \par Assumptions, External Events, and Notes:
+**          None
+**
+*/
+void CFE_TBL_RegisterWithCriticalTableRegistry(CFE_TBL_CritRegRec_t *CritRegRecPtr, CFE_TBL_RegistryRec_t *RegRecPtr,
+                                               const char *TblName);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Generic iterator for access descriptors associated with a Table Registry
+**
+** \par Description
+**        This function iterates through the list of access descriptors that are associated
+**        with the given table registry entry.  The user-supplied callback function will be
+**        invoked for each access descriptor, with the opaque pointer argument passed as a
+**        parameter.
+**
+** \par Assumptions, External Events, and Notes:
+**        The caller should ensure that the list is not modified by other threads during this call
+**
+** \param RegRecPtr The pointer to the registry record
+** \param Func The function to invoke for each access descriptor
+** \param Arg Opaque argument, passed through to function
+*/
+void CFE_TBL_ForeachAccessDescriptor(CFE_TBL_RegistryRec_t *RegRecPtr, CFE_TBL_AccessDescFunc_t Func, void *Arg);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Handle iterator function that increments a counter
+**
+** \par Description
+**        When used with CFE_TBL_ForeachAccessDescriptor() this will count the number of entries
+**
+** \par Assumptions, External Events, and Notes:
+**        This is declared here so it can be used in several places that count descriptors
+**
+** \param AccDescPtr Pointer to descriptor entry, not used
+** \param Arg a pointer to a uint32 value that is incremented on each call
+*/
+void CFE_TBL_CountAccessDescHelper(CFE_TBL_AccessDescriptor_t *AccDescPtr, void *Arg);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Initializes a handle link
+**
+** \par Description
+**        Sets the handle link to initial condition, where it is not a member of any list
+**        After this call, CFE_TBL_HandleLinkIsAttached() on this link will always return false
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param LinkPtr Pointer to link entry to initialize
+*/
+void CFE_TBL_HandleLinkInit(CFE_TBL_HandleLink_t *LinkPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Checks if a handle link is attached to another entry
+**
+** \par Description
+**        This will return true if the passed-in link is attached to another list node,
+**        indicating it is part of a list.  Conversely, this will return false if the
+**        link is not attached to another node, indicating a singleton or empty list.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param LinkPtr Pointer to link entry to check
+** \retval true if the link node is part of a list (attached)
+** \retval false if the link node is not part of a list (detached)
+*/
+bool CFE_TBL_HandleLinkIsAttached(CFE_TBL_HandleLink_t *LinkPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Removes the given access descriptor from the registry list
+**
+** \par Description
+**        This will disassociate the access descriptor from the table registry record by
+**        removing/extracting the access descriptor from the linked list
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param RegRecPtr The table registry record that is associated with the access descriptor
+** \param AccessDescPtr The access descriptor that is to be removed from the list
+*/
+void CFE_TBL_HandleListRemoveLink(CFE_TBL_RegistryRec_t *RegRecPtr, CFE_TBL_AccessDescriptor_t *AccessDescPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Inserts the given access descriptor into the registry list
+**
+** \par Description
+**        This will associate the access descriptor with the table registry record by
+**        inserting the access descriptor into the linked list
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param RegRecPtr The table registry record that should be associated with the access descriptor
+** \param AccessDescPtr The access descriptor that is to be added to the list
+*/
+void CFE_TBL_HandleListInsertLink(CFE_TBL_RegistryRec_t *RegRecPtr, CFE_TBL_AccessDescriptor_t *AccessDescPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Gets the ID of the next buffer to use on a double-buffered table
+**
+** \par Description
+**        This returns the identifier for the local table buffer that should be
+**        loaded next.
+**
+** \par Assumptions, External Events, and Notes:
+**        This is not applicable to single-buffered tables.
+**
+** \param RegRecPtr The table registry record
+** \returns Identifier of next buffer to use
+*/
+int32 CFE_TBL_GetNextLocalBufferId(CFE_TBL_RegistryRec_t *RegRecPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Gets the currently-active buffer pointer for a table
+**
+** \par Description
+**        This returns a pointer to the currently active table buffer.  On a single-buffered
+**        table, this is always the first/only buffer.  This function never returns NULL, as
+**        all tables have at least one buffer.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \param RegRecPtr The table registry record
+** \returns Pointer to the active table buffer
+*/
+CFE_TBL_LoadBuff_t *CFE_TBL_GetActiveBuffer(CFE_TBL_RegistryRec_t *RegRecPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Gets the inactive buffer pointer for a table
+**
+** \par Description
+**        This returns a pointer to inactive table buffer.  On a double-buffered table
+**        this refers to whichever buffer is _not_ currently active (that is, the opposite
+**        buffer from what is returned by CFE_TBL_GetActiveBuffer()).
+**
+**        On a single-buffered, if there is a load in progress that is utilizing one of the
+**        global/shared load buffers, then this returns a pointer to that buffer.  If there
+**        is no load in progress, this returns NULL to indicate there is no inactive buffer.
+**
+** \par Assumptions, External Events, and Notes:
+**        This funtion may return NULL if there is no inactive buffer associated with the table
+**
+** \param RegRecPtr The table registry record
+** \returns Pointer to the inactive table buffer
+*/
+CFE_TBL_LoadBuff_t *CFE_TBL_GetInactiveBuffer(CFE_TBL_RegistryRec_t *RegRecPtr);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Gets the buffer pointer for a table based on the selection enum
+**
+** \par Description
+**        Gets either the active buffer (see CFE_TBL_GetActiveBuffer()) or the inactive
+**        buffer (see CFE_TBL_GetInactiveBuffer()) based on the BufferSelect parameter.
+**
+** \par Assumptions, External Events, and Notes:
+**        This funtion may return NULL if there is no buffer associated with the table
+**        This will send an event if the BufferSelect parameter is not valid
+**
+** \param RegRecPtr The table registry record
+** \param BufferSelect The buffer to obtain (active or inactive)
+** \returns Pointer to the selected table buffer
+*/
+CFE_TBL_LoadBuff_t *CFE_TBL_GetSelectedBuffer(CFE_TBL_RegistryRec_t *     RegRecPtr,
+                                              CFE_TBL_BufferSelect_Enum_t BufferSelect);
+
+/*---------------------------------------------------------------------------------------*/
+/**
+** \brief Checks if a validation request is pending and clears the request
+**
+** \par Description
+**        This checks the given flag (which is a request ID) to determine if a table validation
+**        request is pending.
+**
+**        If no validation request is pending, this returns NULL and nothing else is done.
+**
+**        If a validation request is pending, then this clears the request (by writing
+**        #CFE_TBL_VALRESULTID_UNDEFINED to the request flag) and returns a pointer to the
+**        corresponding Validation Result buffer that refers to that request.  The request
+**        should be in the PENDING state.
+**
+** \par Assumptions, External Events, and Notes:
+**        This will clear the flag if there was a pending request, as it is expected that the
+**        caller will be performing the validation at this time.
+**
+** \param ValIdPtr Pointer to the table validation request flag (from the table registry entry)
+** \returns Pointer to the request, if a request was pending
+** \retval NULL if no request was pending
+*/
+CFE_TBL_ValidationResult_t *CFE_TBL_CheckValidationRequest(CFE_TBL_ValidationResultId_t *ValIdPtr);
 
 /*
 ** Globals specific to the TBL module

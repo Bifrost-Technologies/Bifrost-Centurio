@@ -22,6 +22,7 @@
 #include "cfe_msg.h"
 #include "cfe_msg_priv.h"
 #include "cfe_msg_defaults.h"
+#include "cfe_time.h"
 #include "string.h"
 
 /*----------------------------------------------------------------

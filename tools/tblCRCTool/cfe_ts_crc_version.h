@@ -29,16 +29,22 @@
 /*
  * Development Build Macro Definitions
  */
-#define CFE_TS_CRC_BUILD_NUMBER 28 /*!< @brief Number of commits since baseline */
-#define CFE_TS_CRC_BUILD_BASELINE \
-    "v1.3.0-rc4+dev" /*!< @brief Development Build: git tag that is the base for the current */
+#define CFE_TS_CRC_BUILD_NUMBER    2 /*!< @brief Number of commits since baseline */
+#define CFE_TS_CRC_BUILD_BASELINE  "equuleus-rc1" /*!< @brief Development Build: git tag that is the base for the current */
+#define CFE_TS_CRC_BUILD_DEV_CYCLE "equuleus-rc2" /**< @brief Development: Release name for current development cycle */
+#define CFE_TS_CRC_BUILD_CODENAME  "Equuleus" /**< @brief: Development: Code name for the current build */
 
 /*
  * Version Macros, see \ref cfsversions for definitions.
  */
 #define CFE_TS_CRC_MAJOR_VERSION 1  /*!< @brief Major version number */
 #define CFE_TS_CRC_MINOR_VERSION 1  /*!< @brief Minor version number */
-#define CFE_TS_CRC_REVISION      99 /*!< @brief Revision version number. Value of 99 indicates a development version.*/
+#define CFE_TS_CRC_REVISION      0  /*!< @brief Revision version number. Value of 0 indicates a development version.*/
+
+/**
+ * @brief Last official release.
+ */
+#define CFE_TS_CRC_LAST_OFFICIAL "v3.1.0"
 
 /*!
  * @brief Mission revision.
@@ -62,14 +68,12 @@
  */
 #define CFE_TS_CRC_VERSION CFE_TS_CRC_BUILD_BASELINE CFE_TS_CRC_STR(CFE_TS_CRC_BUILD_NUMBER)
 
-/*! @brief Development Build Version String.
- * @details Reports the current development build's baseline, number, and name. Also includes a note about the latest
- * official version. @n See @ref cfsversions for format differences between development and release versions.
+/**
+ * @brief Max Version String length.
+ * 
+ * Maximum length that a tblCRCTool version string can be.
+ * 
  */
-#define CFE_TS_CRC_VERSION_STRING            \
-    " cFE TS CRC calculator (tblCRCtool) \n" \
-    " DEVELOPMENT BUILD \n"                  \
-    " " CFE_TS_CRC_VERSION " \n"             \
-    " Last Official Release: tblCRCtool v3.1.0" /* For full support please use official release version */
+#define CFE_TS_CRC_CFG_MAX_VERSION_STR_LEN 256
 
 #endif /* CFE_TS_CRC_VERSION_H */

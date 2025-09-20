@@ -1,5 +1,45 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev61
+- apply name changes to EDS dispatcher
+- See <https://github.com/nasa/ci_lab/pull/177>
+
+## Development Build: equuleus-rc1+dev57
+- more complete definition of READ_UPLINK
+- See <https://github.com/nasa/ci_lab/pull/174>
+
+## Development Build: equuleus-rc1+dev51
+- Support scheduled uplink check
+- updating ci_lab to use new versioning system
+- See <https://github.com/nasa/ci_lab/pull/162> and <https://github.com/nasa/ci_lab/pull/171>
+
+## Development Build: v2.5.0-rc4_dev81
+- define msgids via topicids
+- See <https://github.com/nasa/ci_lab/pull/165>
+
+## Development Build: v2.5.0-rc4+dev77
+- Remove unused PDU related function codes
+- Remove obsolete README comment
+- Configurable timeouts and loops
+- See <https://github.com/nasa/ci_lab/pull/157>, <https://github.com/nasa/ci_lab/pull/159>, and <https://github.com/nasa/ci_lab/pull/161>
+
+## Development Build: v2.5.0-rc4+dev69
+- add decode hooks
+- Add version information to NOOP event
+- See <https://github.com/nasa/ci_lab/pull/152> and <https://github.com/nasa/ci_lab/pull/153>
+
+## Development Build: v2.5.0-rc4+dev51
+- reorganize source files
+- See <https://github.com/nasa/ci_lab/pull/148>
+
+## Development Build: v2.5.0-rc4+dev47
+- Create Workflow for IC Bundle Generation
+- See <https://github.com/nasa/ci_lab/pull/143>
+
+## Development Build: v2.5.0-rc4+dev43
+- update cmake recipe
+- See <https://github.com/nasa/ci_lab/pull/136>
+
 ## Development Build: v2.5.0-rc4+dev39
 - Remove redundant comments
 - Create CHANGELOG.md

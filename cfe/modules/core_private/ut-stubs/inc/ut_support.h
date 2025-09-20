@@ -102,10 +102,37 @@ typedef struct
 {
     CFE_SB_MsgId_t MsgId;
     uint16         SnapshotOffset;
-    uint16         SnapshotSize;
+    size_t         SnapshotSize;
     uint16         Count;
     void *         SnapshotBuffer;
 } UT_SoftwareBusSnapshot_Entry_t;
+
+/**
+ * Style of message dispatch to perform
+ */
+typedef enum
+{
+    /**
+     * If method is set to NONE, then no dispatch will be set up.
+     * This can be used to e.g. check error paths but not actual message handling.
+     */
+    UT_TaskPipeDispatchMethod_NONE,
+
+    /**
+     * If method is set to MSG_ID_CC, then no dispatch will be set up based on the
+     * MsgID value and command code.  This is the traditional method and works with
+     * task pipe implementations that utilize a local switch() statement.
+     */
+    UT_TaskPipeDispatchMethod_MSG_ID_CC,
+
+    /**
+     * If method is set to TABLE_OFFSET, then no dispatch will be set up based on the
+     * offset into a dispatch table.  This is the EDS method and works with
+     * task pipe implementations that perform message dispatch via a table lookup.
+     */
+    UT_TaskPipeDispatchMethod_TABLE_OFFSET
+
+} UT_TaskPipeDispatchMethod_t;
 
 /*
  * Information to identify a message in the "Task Pipe"
@@ -123,9 +150,23 @@ typedef struct
 typedef struct
 {
     /**
+     * Method of dispatch to use.
+     * This should match how the source was compiled,
+     * and it controls how the stubs are configured.
+     */
+    UT_TaskPipeDispatchMethod_t Method;
+
+    /**
      * Invoke the handler for this MsgID
+     * This is only used/relevant when Method is set to MSG_ID_CC
      */
     CFE_SB_MsgId_t MsgId;
+
+    /**
+     * Offset of handler function to invoke
+     * This is only used/relevant when Method is set to TABLE_OFFSET
+     */
+    int32 TableOffset;
 
     /**
      * Specifies the sub-command to invoke
@@ -133,7 +174,27 @@ typedef struct
      * set to zero in this case).
      */
     CFE_MSG_FcnCode_t CommandCode;
+
+    /**
+     * Set nonzero to indicate a code to be returned from dispatcher.
+     * This may be relevant for any dispatch method
+     */
+    CFE_Status_t DispatchError;
+
+    /**
+     * Expected size of the message being handled
+     */
+    size_t NominalMsgSize;
+
 } UT_TaskPipeDispatchId_t;
+
+/*
+ * The following macros set certain fields inside the UT_TaskPipeDispatchId_t
+ * They can be combined as needed for various situations
+ */
+#define UT_TPD_SETSIZE(cmd) .NominalMsgSize = sizeof(cmd##_t)
+#define UT_TPD_SETCC(cc)    .CommandCode = cc
+#define UT_TPD_SETERR(err)  .DispatchError = err
 
 /*
 ** Functions
@@ -252,7 +313,7 @@ void UT_SetupBasicMsgDispatch(const UT_TaskPipeDispatchId_t *DispatchReq, CFE_MS
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_SB_Buffer_t *), CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
+void UT_CallTaskPipe(void (*TaskPipeFunc)(const CFE_SB_Buffer_t *), const CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
                      UT_TaskPipeDispatchId_t DispatchId);
 
 /*****************************************************************************/
@@ -333,7 +394,7 @@ void UT_SetStatusBSPResetArea(int32 status, uint32 Signature, uint32 ClockSignal
 **        This function does not return a value.
 **
 ******************************************************************************/
-void UT_SetReadBuffer(void *Buff, int NumBytes);
+void UT_SetReadBuffer(void *Buff, size_t NumBytes);
 
 /*****************************************************************************/
 /**
@@ -353,7 +414,7 @@ void UT_SetReadBuffer(void *Buff, int NumBytes);
 **        This function does not return a value.
 **
 ******************************************************************************/
-void UT_SetReadHeader(void *Hdr, int NumBytes);
+void UT_SetReadHeader(void *Hdr, size_t NumBytes);
 
 /*****************************************************************************/
 /**
@@ -393,7 +454,7 @@ void UT_SetDummyFuncRtn(int Return);
 ** \sa
 **
 ******************************************************************************/
-void UT_SetSizeofESResetArea(int32 Size);
+void UT_SetSizeofESResetArea(size_t Size);
 
 /*****************************************************************************/
 /**
@@ -411,7 +472,7 @@ void UT_SetSizeofESResetArea(int32 Size);
 **        This function does not return a value.
 **
 ******************************************************************************/
-uint8 *UT_SetCDSSize(int32 Size);
+uint8 *UT_SetCDSSize(size_t Size);
 
 /*****************************************************************************/
 /**
@@ -752,21 +813,6 @@ bool CFE_UtAssert_MessageCheck_Impl(bool Status, const char *File, uint32 Line, 
 #define CFE_UtAssert_RESOURCEID_EQ(id1, id2)                                                                         \
     UtAssert_GenericUnsignedCompare(CFE_RESOURCEID_TO_ULONG(id1), UtAssert_Compare_EQ, CFE_RESOURCEID_TO_ULONG(id2), \
                                     UtAssert_Radix_HEX, __FILE__, __LINE__, "Resource ID Check: ", #id1, #id2)
-
-/*****************************************************************************/
-/**
-** \brief Macro to check CFE memory size/offset for equality
-**
-** \par Description
-**        A macro that checks two memory offset/size values for equality.
-**
-** \par Assumptions, External Events, and Notes:
-**        This is a simple unsigned comparison which logs the values as hexadecimal
-**
-******************************************************************************/
-#define CFE_UtAssert_MEMOFFSET_EQ(off1, off2)                                                                \
-    UtAssert_GenericUnsignedCompare(off1, UtAssert_Compare_EQ, off2, UtAssert_Radix_HEX, __FILE__, __LINE__, \
-                                    "Offset Check: ", #off1, #off2)
 
 /*****************************************************************************/
 /**

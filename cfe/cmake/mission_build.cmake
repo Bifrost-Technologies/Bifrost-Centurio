@@ -163,6 +163,157 @@ endfunction(generate_build_version_templates)
 
 ##################################################################
 #
+# FUNCTION: setup_global_topicids
+#
+# This is intended to support cases where topic IDs for all apps
+# and modules are assigned in a single/unified header file
+#
+function(setup_global_topicids)
+
+  if (CFE_EDS_ENABLED_BUILD)
+
+    # In an EDS build, the topic IDs always come from EDS
+    set(MISSION_GLOBAL_TOPICID_HEADERFILE "cfe_mission_eds_designparameters.h")
+
+  else(CFE_EDS_ENABLED_BUILD)
+
+    # Check for the presence of a mission-wide/global topic ID file
+    # This uses cfe_locate_implementation_file() as this returns whether or not it found one
+    cfe_locate_implementation_file(MISSION_GLOBAL_TOPICID_HEADERFILE "global_topicids.h"
+      PREFIX ${MISSIONCONFIG} cfs
+      SUBDIR config
+    )
+
+    # If a top level file was found, then create a wrapper around it called "cfs_global_topicids.h"
+    # Note that at this point it could be a list
+    if (MISSION_GLOBAL_TOPICID_HEADERFILE)
+
+      set(TEMP_WRAPPER_FILE_CONTENT)
+      foreach(SELECTED_FILE ${MISSION_GLOBAL_TOPICID_HEADERFILE})
+        file(TO_NATIVE_PATH "${SELECTED_FILE}" SRC_NATIVE_PATH)
+        list(APPEND TEMP_WRAPPER_FILE_CONTENT "#include \"${SRC_NATIVE_PATH}\"\n")
+      endforeach()
+
+      # Generate a header file
+      generate_c_headerfile("${CMAKE_BINARY_DIR}/inc/cfs_global_topicids.h" ${TEMP_WRAPPER_FILE_CONTENT})
+      unset(TEMP_WRAPPER_FILE_CONTENT)
+
+      # From here on use the wrapper file
+      set(MISSION_GLOBAL_TOPICID_HEADERFILE "cfs_global_topicids.h")
+
+    endif(MISSION_GLOBAL_TOPICID_HEADERFILE)
+
+  endif(CFE_EDS_ENABLED_BUILD)
+
+  # Finally, export a CFGFILE_SRC variable for each of the deps
+  # This should make each respective "mission_build" create a wrapper
+  # that points directly at this global file, ignoring the default
+  if (MISSION_GLOBAL_TOPICID_HEADERFILE)
+
+    set (OUTPUT_VAR_LIST)
+
+    # Slight inconsistency: for CFE core components, the cfe_ prefix is omitted in DEP_NAME
+    # To make this work without major impact, add it back in here
+    foreach(DEP_NAME ${MISSION_CORE_MODULES})
+      string(TOUPPER "${DEP_NAME}_CFGFILE_SRC" CFGSRC)
+      list(APPEND OUTPUT_VAR_LIST ${CFGSRC}_cfe_${DEP_NAME}_topicids)
+    endforeach(DEP_NAME ${MISSION_CORE_MODULES})
+
+    foreach(DEP_NAME ${MISSION_APPS})
+      string(TOUPPER "${DEP_NAME}_CFGFILE_SRC" CFGSRC)
+      list(APPEND OUTPUT_VAR_LIST ${CFGSRC}_${DEP_NAME}_topicids)
+    endforeach(DEP_NAME ${MISSION_APPS})
+
+    # This is the actual export to parent scope
+    foreach(VAR_NAME ${OUTPUT_VAR_LIST})
+      set(${VAR_NAME} ${MISSION_GLOBAL_TOPICID_HEADERFILE} PARENT_SCOPE)
+    endforeach(VAR_NAME ${OUTPUT_VAR_LIST})
+
+  endif (MISSION_GLOBAL_TOPICID_HEADERFILE)
+
+endfunction(setup_global_topicids)
+
+##################################################################
+#
+# FUNCTION: export_variable_cache
+#
+# Export variables to a "mission_vars.cache" file so they can be
+# referenced by the target-specific builds.  This list is ingested
+# during the startup phase of all the subordinate cmake invocations.
+#
+# The passed-in USER_VARLIST should be the names of additional variables
+# to export.  These can be cache vars or normal vars.
+#
+function(export_variable_cache USER_VARLIST)
+
+  # The set of variables that should always be exported
+  set(FIXED_VARLIST
+    "MISSION_NAME"
+    "SIMULATION"
+    "MISSION_DEFS"
+    "MISSION_SOURCE_DIR"
+    "MISSION_BINARY_DIR"
+    "MISSIONCONFIG"
+    "MISSION_APPS"
+    "MISSION_PSPMODULES"
+    "MISSION_DEPS"
+    "MISSION_EDS_FILELIST"
+    "MISSION_EDS_SCRIPTLIST"
+    "ENABLE_UNIT_TESTS"
+  )
+
+  set(MISSION_VARCACHE)
+  foreach(VARL ${FIXED_VARLIST} ${USER_VARLIST} ${ARGN})
+    # It is important to avoid putting any blank lines in the output,
+    # This will cause the reader to misinterpret the data
+    if (NOT "${${VARL}}" STREQUAL "")
+      string(APPEND MISSION_VARCACHE "${VARL}\n${${VARL}}\n")
+    endif (NOT "${${VARL}}" STREQUAL "")
+  endforeach()
+
+  # Write the file -- the subprocess will read this file and re-create
+  # variables out of them.  The alternative to this is to specify many "-D"
+  # parameters to the subordinate build but that would not scale well to many vars,
+  # and it would go through the shell meaning quoting/escaping for safety becomes
+  # very difficult.  Using the file method avoids shell interpretation.
+  file(WRITE "${CMAKE_BINARY_DIR}/mission_vars.cache" "${MISSION_VARCACHE}")
+
+endfunction(export_variable_cache)
+
+##################################################################
+#
+# FUNCTION: decode_targetsystem
+#
+#
+function(decode_targetsystem TARGETSYSTEM)
+  # The "BUILD_CONFIG" is a list of items to uniquely identify this build
+  # The first element in the list is the toolchain name, followed by config name(s)
+
+  set(ONE_VAL_ARGS OUTPUT_ARCH_BINARY_DIR OUTPUT_ARCH_TOOLCHAIN_NAME OUTPUT_ARCH_CONFIG_NAME)
+  cmake_parse_arguments(DT "" "${ONE_VAL_ARGS}" "" ${ARGN})
+
+  set(BUILD_CONFIG ${BUILD_CONFIG_${TARGETSYSTEM}})
+  list(GET BUILD_CONFIG 0 ARCH_TOOLCHAIN_NAME)
+  list(REMOVE_AT BUILD_CONFIG 0)
+  # convert to a string which is safe for a directory name
+  string(REGEX REPLACE "[^A-Za-z0-9]" "_" ARCH_CONFIG_NAME "${BUILD_CONFIG}")
+
+  # Export values to parent
+  if (DT_OUTPUT_ARCH_BINARY_DIR)
+    set(${DT_OUTPUT_ARCH_BINARY_DIR} "${CMAKE_BINARY_DIR}/${ARCH_TOOLCHAIN_NAME}/${ARCH_CONFIG_NAME}" PARENT_SCOPE)
+  endif()
+  if (DT_OUTPUT_ARCH_TOOLCHAIN_NAME)
+    set(${DT_OUTPUT_ARCH_TOOLCHAIN_NAME} "${ARCH_TOOLCHAIN_NAME}" PARENT_SCOPE)
+  endif()
+  if (DT_OUTPUT_ARCH_CONFIG_NAME)
+    set(${DT_OUTPUT_ARCH_CONFIG_NAME} "${ARCH_CONFIG_NAME}" PARENT_SCOPE)
+  endif()
+
+endfunction(decode_targetsystem)
+
+
+##################################################################
+#
 # FUNCTION: prepare
 #
 # Called by the top-level CMakeLists.txt to set up prerequisites
@@ -174,13 +325,22 @@ function(prepare)
     add_definitions(-DSIMULATION=${SIMULATION})
   endif (SIMULATION)
 
+  # Certain runtime variables need to be "exported" to the subordinate build, such as
+  # the specific arch settings and the location of all the apps.  This list is collected
+  # during this function execution and exported at the end.
+  set(EXPORT_VARLIST)
+
   # Create custom targets for building and cleaning all architectures
   # This is required particularly for doing extra stuff in the clean step
   add_custom_target(mission-all COMMAND $(MAKE) all)
   add_custom_target(mission-install COMMAND $(MAKE) install)
   add_custom_target(mission-clean COMMAND $(MAKE) clean)
   add_custom_target(mission-prebuild)
+  add_custom_target(mission-cfetables)
   add_custom_target(doc-prebuild)
+
+  add_dependencies(mission-all mission-cfetables)
+  add_dependencies(mission-install mission-cfetables)
 
   # Locate the source location for all the apps found within the target file
   # This is done by searching through the list of paths to find a matching name
@@ -294,7 +454,12 @@ function(prepare)
     "${psp_MISSION_DIR}/psp/fsw/inc/*.h"
   )
   foreach(MODULE core_api ${MISSION_CORE_MODULES})
-    list(APPEND SUBMODULE_HEADER_PATHS "${${MODULE}_MISSION_DIR}/fsw/inc/*.h")
+    if (IS_DIRECTORY "${${MODULE}_MISSION_DIR}/fsw/inc")
+      list(APPEND SUBMODULE_HEADER_PATHS "${${MODULE}_MISSION_DIR}/fsw/inc/*.h")
+    endif()
+    if (IS_DIRECTORY "${${MODULE}_MISSION_DIR}/config")
+      list(APPEND SUBMODULE_HEADER_PATHS "${${MODULE}_MISSION_DIR}/config/default_*.h")
+    endif()
   endforeach()
   file(GLOB MISSION_USERGUIDE_HEADERFILES
     ${SUBMODULE_HEADER_PATHS}
@@ -329,63 +494,54 @@ function(prepare)
   add_dependencies(cfe-usersguide doc-prebuild)
   add_dependencies(mission-doc doc-prebuild)
 
+  # Set up the global topicid header file, if present
+  setup_global_topicids()
+
   # Pull in any application-specific mission-scope configuration
   # This may include user configuration files such as cfe_mission_cfg.h,
   # msgid definitions, or any other configuration/preparation that needs to
   # happen at mission/global scope.
   foreach(DEP_NAME ${MISSION_DEPS})
+    list(APPEND EXPORT_VARLIST "${DEP_NAME}_MISSION_DIR")
     include("${${DEP_NAME}_MISSION_DIR}/mission_build.cmake" OPTIONAL)
   endforeach(DEP_NAME ${MISSION_DEPS})
 
-  # Certain runtime variables need to be "exported" to the subordinate build, such as
-  # the specific arch settings and the location of all the apps.  This is done by creating
-  # a temporary file within the dir and then the subprocess will read that file and re-create
-  # variables out of them.  The alternative to this is to specify many "-D" parameters to the
-  # subordinate build but that would not scale well to many vars.
-  set(VARLIST
-    "MISSION_NAME"
-    "SIMULATION"
-    "MISSION_DEFS"
-    "MISSION_SOURCE_DIR"
-    "MISSION_BINARY_DIR"
-    "MISSIONCONFIG"
-    "MISSION_APPS"
-    "MISSION_PSPMODULES"
-    "MISSION_DEPS"
-    "ENABLE_UNIT_TESTS"
-  )
-  foreach(APP ${MISSION_DEPS})
-    list(APPEND VARLIST "${APP}_MISSION_DIR")
-  endforeach()
-
   foreach(SYSVAR ${TGTSYS_LIST})
-    list(APPEND VARLIST "BUILD_CONFIG_${SYSVAR}")
+    list(APPEND EXPORT_VARLIST "BUILD_CONFIG_${SYSVAR}")
   endforeach(SYSVAR ${TGTSYS_LIST})
-
-  set(MISSION_VARCACHE)
-  foreach(VARL ${VARLIST})
-    # It is important to avoid putting any blank lines in the output,
-    # This will cause the reader to misinterpret the data
-    if (NOT "${${VARL}}" STREQUAL "")
-      set(MISSION_VARCACHE "${MISSION_VARCACHE}${VARL}\n${${VARL}}\n")
-    endif (NOT "${${VARL}}" STREQUAL "")
-  endforeach(VARL ${VARLIST})
-  file(WRITE "${CMAKE_BINARY_DIR}/mission_vars.cache" "${MISSION_VARCACHE}")
 
   generate_build_version_templates()
 
   # Generate the tools for the native (host) arch
   # Add all public include dirs for core components to include path for tools
   include_directories(
+    ${MISSION_BINARY_DIR}/inc
     ${core_api_MISSION_DIR}/fsw/inc
     ${osal_MISSION_DIR}/src/os/inc
-    ${psp_MISSION_DIR}/psp/fsw/inc
+    ${psp_MISSION_DIR}/fsw/inc
   )
   add_subdirectory(${MISSION_SOURCE_DIR}/tools tools)
 
   # Add a dependency on the table generator tool as this is required for table builds
-  # The "elf2cfetbl" target should have been added by the "tools" above
-  add_dependencies(mission-prebuild elf2cfetbl)
+  # The table tool target should have been added by the "tools" above
+  if (NOT DEFINED CFS_TABLETOOL_SCRIPT_DIR)
+    message(FATAL_ERROR "Table Tool missing: CFS_TABLETOOL_SCRIPT_DIR must be defined by the tools")
+  endif()
+  list(APPEND EXPORT_VARLIST CFS_TABLETOOL_SCRIPT_DIR)
+
+  # Prepare the table makefile - Ensure the list of tables is initially empty
+  file(REMOVE_RECURSE "${MISSION_BINARY_DIR}/tables")
+  file(MAKE_DIRECTORY "${MISSION_BINARY_DIR}/tables")
+  file(WRITE "${MISSION_BINARY_DIR}/tables/Makefile"
+    "MISSION_BINARY_DIR := ${MISSION_BINARY_DIR}\n"
+    "TABLE_BINARY_DIR := ${MISSION_BINARY_DIR}/tables\n"
+    "TABLETOOL_SCRIPT_DIR := ${CFS_TABLETOOL_SCRIPT_DIR}\n"
+    "MISSION_SOURCE_DIR := ${MISSION_SOURCE_DIR}\n"
+    "MISSION_DEFS := ${MISSION_DEFS}\n\n"
+    "include \$(wildcard $(TABLETOOL_SCRIPT_DIR)/*.mk) \$(wildcard *.d)\n"
+  )
+
+  add_dependencies(mission-cfetables mission-prebuild)
 
   # Build version information should be generated as part of the pre-build process
   add_dependencies(mission-prebuild mission-version)
@@ -394,6 +550,10 @@ function(prepare)
   if (IS_DIRECTORY ${MISSION_DEFS}/functional-test AND DEFINED FT_INSTALL_SUBDIR)
     install(DIRECTORY ${MISSION_DEFS}/functional-test/ DESTINATION ${FT_INSTALL_SUBDIR})
   endif()
+
+  # Export the important state variables collected during this function.
+  # This is done last such that everything should have its correct value
+  export_variable_cache(${EXPORT_VARLIST})
 
 endfunction(prepare)
 
@@ -408,13 +568,13 @@ function(process_arch TARGETSYSTEM)
 
   # The "BUILD_CONFIG" is a list of items to uniquely identify this build
   # The first element in the list is the toolchain name, followed by config name(s)
-  set(BUILD_CONFIG ${BUILD_CONFIG_${TARGETSYSTEM}})
-  list(GET BUILD_CONFIG 0 ARCH_TOOLCHAIN_NAME)
-  list(REMOVE_AT BUILD_CONFIG 0)
-  # convert to a string which is safe for a directory name
-  string(REGEX REPLACE "[^A-Za-z0-9]" "_" ARCH_CONFIG_NAME "${BUILD_CONFIG}")
-  set(ARCH_BINARY_DIR "${CMAKE_BINARY_DIR}/${ARCH_TOOLCHAIN_NAME}/${ARCH_CONFIG_NAME}")
-  file(MAKE_DIRECTORY "${ARCH_BINARY_DIR}" "${ARCH_BINARY_DIR}/inc")
+  decode_targetsystem(${TARGETSYSTEM}
+    OUTPUT_ARCH_BINARY_DIR      ARCH_BINARY_DIR
+    OUTPUT_ARCH_TOOLCHAIN_NAME  ARCH_TOOLCHAIN_NAME
+    OUTPUT_ARCH_CONFIG_NAME     ARCH_CONFIG_NAME
+  )
+
+  file(MAKE_DIRECTORY "${ARCH_BINARY_DIR}")
 
   message(STATUS "Configuring for system arch: ${ARCH_TOOLCHAIN_NAME}/${ARCH_CONFIG_NAME}")
 
@@ -443,7 +603,9 @@ function(process_arch TARGETSYSTEM)
         -DMISSION_BINARY_DIR=${MISSION_BINARY_DIR}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+        -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
         -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=${CMAKE_EXPORT_COMPILE_COMMANDS}
+        -DCFE_EDS_ENABLED_BUILD:BOOL=${CFE_EDS_ENABLED_BUILD}
         ${SELECTED_TOOLCHAIN_FILE}
         ${CFE_SOURCE_DIR}
     WORKING_DIRECTORY
@@ -475,13 +637,21 @@ function(process_arch TARGETSYSTEM)
    WORKING_DIRECTORY
       "${ARCH_BINARY_DIR}"
   )
+  add_custom_target(${TARGETSYSTEM}-cfetables
+   COMMAND
+      $(MAKE) cfetables
+   WORKING_DIRECTORY
+      "${ARCH_BINARY_DIR}"
+  )
 
   # All subordinate builds depend on the generated files being present first
   add_dependencies(${TARGETSYSTEM}-install mission-prebuild)
   add_dependencies(${TARGETSYSTEM}-all mission-prebuild)
+  add_dependencies(${TARGETSYSTEM}-cfetables mission-prebuild)
 
   add_dependencies(mission-all ${TARGETSYSTEM}-all)
   add_dependencies(mission-clean ${TARGETSYSTEM}-clean)
   add_dependencies(mission-install ${TARGETSYSTEM}-install)
+  add_dependencies(mission-cfetables ${TARGETSYSTEM}-cfetables)
 
 endfunction(process_arch TARGETSYSTEM)

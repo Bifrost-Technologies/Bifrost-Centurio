@@ -77,6 +77,12 @@ class SubsystemTelemetry(QDialog, UiGenerictelemetrydialog):
                     value_field.setText(tlm_item_enum[tlm_index][int(tlm_field[0])])
                 elif tlm_item_display_type[tlm_index] == 'Str':
                     value_field.setText(tlm_field[0].decode('utf-8', 'ignore'))
+                else:
+                    # Fallback: display numeric value as decimal for unknown display types (e.g., units like Deg, M, Pct)
+                    try:
+                        value_field.setText(str(tlm_field[0]))
+                    except Exception:
+                        value_field.setText('')
                 label_field.setText(tlm_item_desc[tlm_index])
             else:
                 print("ERROR: Can't unpack buffer of length", len(tlm_field2))
@@ -165,7 +171,8 @@ if __name__ == '__main__':
     # udpPort = 10000
     app_id = 999
     tlm_def_file = f"{ROOTDIR}/telemetry_def.txt"
-    endian = "L"
+    # Default to big-endian to match TO_LAB's EDS (network byte order)
+    endian = "B"
     subscription = ""
 
     #

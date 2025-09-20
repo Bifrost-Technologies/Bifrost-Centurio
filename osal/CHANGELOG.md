@@ -1,5 +1,134 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev123
+- 'Fix #1445, add conditional around priority sem test'
+- See: <https://github.com/nasa/osal/pull/1509>
+
+
+## Development Build: equuleus-rc1+dev117
+- 'Fix nasa/cFS#839, Update Workflows to Ubuntu 22.04'
+- See: <https://github.com/nasa/osal/pull/1506>
+
+
+## Development Build: equuleus-rc1+dev113
+- 'Fix #1496, Update malloc stub'
+- See: <https://github.com/nasa/osal/pull/1497>
+
+
+## Development Build: equuleus-rc1+dev101
+- Update Select functions params
+- update ut_oscore_test.c
+- Update timer interval comparison
+- Update stack sizes for test tasks
+- See <https://github.com/nasa/osal/pull/1495>, <https://github.com/nasa/osal/pull/1499>, <https://github.com/nasa/osal/pull/1504>, and <https://github.com/nasa/osal/pull/1502>
+
+## Development Build: equuleus-rc1+dev97
+- Correct README.md OSAL User's Guide links
+- See <https://github.com/nasa/osal/pull/1493>
+
+## Development Build: equuleus-rc1+dev93
+- Adding a strstr() check
+- See <https://github.com/nasa/osal/pull/1486>
+
+## Development Build: equuleus-rc1+dev89
+- Update misnamed member variable in OS_BSP_GlobalData_t
+- See <https://github.com/nasa/osal/pull/1416>
+
+## Development Build: equuleus-rc1+dev85
+- Fix workflow bug and enforce updating of coverage minimums
+- See <https://github.com/nasa/osal/pull/1419>
+
+## Development Build: equuleus-rc1+dev81
+- Fix Address Sanitizer issue in vxworks-console-testrunner
+- f-sanitizer issue in coverage-shared-idma
+- See <https://github.com/nasa/osal/pull/1467> and <https://github.com/nasa/osal/pull/1470>
+
+## Development Build: equuleus-rc1+dev73
+- High-res timed stream ops
+- Moves OS_strnlen to public API and adds static analysis comments
+- See <https://github.com/nasa/osal/pull/1456> and <https://github.com/nasa/osal/pull/1465>
+
+## Development Build: equuleus-rc1+dev66
+- Adds node20 compatible github actions
+- See <https://github.com/nasa/osal/pull/1460>
+
+## Development Build: equuleus-rc1+dev62
+- Break up pc-rtems to support generic configuration and add tarfs support
+- See <https://github.com/nasa/osal/pull/1350>
+
+## Development Build: equuleus-rc1:dev58
+- POSIX implementation honors stack pointer
+- See <https://github.com/nasa/osal/pull/1450>
+
+## Development Build: equuleus-rc1+dev53
+- use virtual path as name for FS_BASED maps
+- Remove softsleep, as a dead store.
+- Remove stray remaining 'goto' in OSAL test code
+- Align mismatched function prototype/implem. parameter names
+- Move variables declared mid-function to the top
+- See <https://github.com/nasa/osal/pull/1448>, <https://github.com/nasa/osal/issues/1452>, <https://github.com/nasa/osal/pull/1357>, <https://github.com/nasa/osal/pull/1354>, and <https://github.com/nasa/osal/pull/1331>
+
+## Development Build: equuleus-rc1+dev41
+- Remove unreachable branch (superfluous if condition)
+- See <https://github.com/nasa/osal/pull/1368>
+
+## Development Build: equuleus-rc1+dev37
+- Fix pointer error in OS_GetErrorName
+- See <https://github.com/nasa/osal/pull/1436>
+
+## Development Build: equuleus-rc1+dev33
+- updating OSAL to use new versioning system
+- patch build for old RTEMS
+- See <https://github.com/nasa/osal/pull/1437> and <https://github.com/nasa/osal/pull/1442>
+
+## Development Build: v6.0.0-rc4+dev251
+- RTEMS semaphore return bugs and functional test update
+- See <https://github.com/nasa/osal/pull/1438>
+
+## Development Build: v6.0.0-rc4+dev247
+- adjust pthread stack to account for TCB+TLS
+- See <https://github.com/nasa/osal/pull/1430>
+
+## Development Build: v6.0.0-rc4+dev243
+- Wrong memory alignment calculation
+- See <https://github.com/nasa/osal/pull/1413>
+
+## Development Build: v6.0.0-rc4+dev239
+- Add RTEMS console and timebase posix task names
+- See <https://github.com/nasa/osal/pull/1422>
+
+## Development Build: v6.0.0-rc4+dev235
+- Set RTEMS task name for cpuuse
+- Squash RTEMS sem take timeout bug
+- See <https://github.com/nasa/osal/pull/1407> and <https://github.com/nasa/osal/pull/1408>
+
+## Development Build: v6.0.0-rc4+dev229
+- Fixes errors in IC Bundle workflow file
+- See <https://github.com/nasa/osal/pull/1403>
+
+## Development Build: v6.0.0-rc4+dev223
+- 'Fix #1396, do not use intmax_t/uintmax_t types'
+- 'Fix #1398, separate bind and listen calls for streams'
+- See: <https://github.com/nasa/cFE/pull/1397> <https://github.com/nasa/cFE/pull/1399>
+
+
+## Development Build: v6.0.0-rc4+dev217
+- Add additional counters to test summary
+- See <https://github.com/nasa/osal/pull/1393>
+
+## Development Build: v6.0.0-rc4+dev213
+- Create Workflow for IC Bundle Generation
+- See <https://github.com/nasa/osal/pull/1383>
+
+## Development Build: v6.0.0-rc4+dev209
+- add assert macros for other data types
+- See <https://github.com/nasa/osal/pull/1375>
+
+## Development Build: v6.0.0-rc4+dev205
+- fixup API headers for C++
+- workflow to validate OSAL API
+- See <https://github.com/nasa/osal/pull/1371> and <https://github.com/nasa/osal/pull/1372>
+
 ## Development Build: v6.0.0-rc4+dev199
 - Modify unreachable branch in OS_ObjectIdAllocateNew
 - See <https://github.com/nasa/osal/pull/1327>

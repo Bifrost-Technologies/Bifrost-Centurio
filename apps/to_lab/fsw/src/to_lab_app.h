@@ -24,41 +24,54 @@
 #ifndef TO_LAB_APP_H
 #define TO_LAB_APP_H
 
-#include "cfe.h"
-
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "common_types.h"
 #include "osapi.h"
+#include "cfe.h"
 
-/*****************************************************************************/
+#include "to_lab_mission_cfg.h"
+#include "to_lab_platform_cfg.h"
+#include "to_lab_cmds.h"
+#include "to_lab_dispatch.h"
+#include "to_lab_msg.h"
+#include "to_lab_tbl.h"
 
-#define TO_LAB_TASK_MSEC 500 /* run at 2 Hz */
-#define TO_LAB_UNUSED    CFE_SB_MSGID_RESERVED
+/************************************************************************
+** Type Definitions
+*************************************************************************/
 
 /**
- * Depth of pipe for commands to the TO_LAB application itself
+ * CI global data structure
  */
-#define TO_LAB_CMD_PIPE_DEPTH 8
+typedef struct
+{
+    CFE_SB_PipeId_t Tlm_pipe;
+    CFE_SB_PipeId_t Cmd_pipe;
+    osal_id_t       TLMsockid;
+    bool            downlink_on;
+    char            tlm_dest_IP[17];
+    bool            suppress_sendto;
 
-/**
- * Depth of pipe for telemetry forwarded through the TO_LAB application
- */
-#define TO_LAB_TLM_PIPE_DEPTH OS_QUEUE_MAX_DEPTH
+    TO_LAB_HkTlm_t        HkTlm;
+    TO_LAB_DataTypesTlm_t DataTypesTlm;
 
-#define cfgTLM_ADDR        "192.168.1.81"
-#define cfgTLM_PORT        1235
-#define TO_LAB_VERSION_NUM "5.1.0"
+    TO_LAB_Subs_t *  SubsTblPtr;
+    CFE_TBL_Handle_t SubsTblHandle;
+
+} TO_LAB_GlobalData_t;
+
+/************************************************************************
+ * Function Prototypes
+ ************************************************************************/
+
+void  TO_LAB_AppMain(void);
+void  TO_LAB_openTLM(void);
+int32 TO_LAB_init(void);
+void  TO_LAB_process_commands(void);
+void  TO_LAB_forward_telemetry(void);
 
 /******************************************************************************/
 
-/*
-** Prototypes Section
-*/
-void TO_LAB_AppMain(void);
-
-/******************************************************************************/
+/* Global State Object */
+extern TO_LAB_GlobalData_t TO_LAB_Global;
 
 #endif

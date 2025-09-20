@@ -48,6 +48,29 @@ typedef struct
 } OS_time_t;
 
 /**
+ * @brief The maximum value for OS_time_t
+ *
+ * This is the largest positive (future) time that is representable
+ * in an OS_time_t value.
+ */
+#define OS_TIME_MAX ((OS_time_t) {INT64_MAX})
+
+/**
+ * @brief The zero value for OS_time_t
+ *
+ * This is a reasonable initializer/placeholder value for an OS_time_t
+ */
+#define OS_TIME_ZERO ((OS_time_t) {0})
+
+/**
+ * @brief The minimum value for OS_time_t
+ *
+ * This is the largest negative (past) time that is representable
+ * in an OS_time_t value.
+ */
+#define OS_TIME_MIN ((OS_time_t) {INT64_MIN})
+
+/**
  * @brief Multipliers/divisors to convert ticks into standardized units
  *
  * Various fixed conversion factor constants used by the conversion routines
@@ -103,6 +126,45 @@ int32 OS_GetLocalTime(OS_time_t *time_struct);
 int32 OS_SetLocalTime(const OS_time_t *time_struct);
 
 /*-------------------------------------------------------------------------------------*/
+/**
+ * @brief Gets an absolute time value relative to the current time
+ *
+ * This function adds the given interval, expressed in milliseconds, to the
+ * current clock and returns the result.
+ *
+ * @note This is intended to ease transitioning from a relative timeout value to
+ * and absolute timeout value.  The result can be passed to any function
+ * that accepts an absolute timeout, to mimic the behavior of a relative timeout.
+ *
+ * @param[in]  relative_msec A relative time interval, in milliseconds
+ *
+ * @returns Absolute time value after adding interval
+ */
+OS_time_t OS_TimeFromRelativeMilliseconds(int32 relative_msec);
+
+/*-------------------------------------------------------------------------------------*/
+/**
+ * @brief Gets a relative time value from an absolute time
+ *
+ * This function computes the number of milliseconds until the given
+ * absolute time value is reached in the system clock.
+ *
+ * @note This is intended to ease transitioning from a relative timeout value to
+ * and absolute timeout value.  The result can be passed to any function
+ * that accepts a relative timeout, to mimic the behavior of an absolute timeout.
+ *
+ * The return value of this function is intended to be compatible with the relative
+ * timeout parameter of various OSAL APIs e.g. OS_TimedRead() / OS_TimedWrite()
+ *
+ * @param[in]  time An absolute time value
+ *
+ * @returns Milliseconds until time value will be reached
+ * @retval OS_CHECK (0) if time is the current time or is in the past
+ * @retval OS_PEND (-1) if time is far in the future (not expressable as an int32)
+ */
+int32 OS_TimeToRelativeMilliseconds(OS_time_t time);
+
+/*-------------------------------------------------------------------------------------*/
 /*
  * Accessor / Unit Conversion routines for OS_time_t
  *
@@ -147,7 +209,8 @@ static inline int64 OS_TimeGetTotalSeconds(OS_time_t tm)
  */
 static inline OS_time_t OS_TimeFromTotalSeconds(int64 tm)
 {
-    return (OS_time_t) {.ticks = (tm * OS_TIME_TICKS_PER_SECOND)};
+    OS_time_t ostm = {tm * OS_TIME_TICKS_PER_SECOND};
+    return ostm;
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -180,7 +243,8 @@ static inline int64 OS_TimeGetTotalMilliseconds(OS_time_t tm)
  */
 static inline OS_time_t OS_TimeFromTotalMilliseconds(int64 tm)
 {
-    return (OS_time_t) {.ticks = (tm * OS_TIME_TICKS_PER_MSEC)};
+    OS_time_t ostm = {tm * OS_TIME_TICKS_PER_MSEC};
+    return ostm;
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -213,7 +277,9 @@ static inline int64 OS_TimeGetTotalMicroseconds(OS_time_t tm)
  */
 static inline OS_time_t OS_TimeFromTotalMicroseconds(int64 tm)
 {
-    return (OS_time_t) {.ticks = (tm * OS_TIME_TICKS_PER_USEC)};
+    /* SAD: Overflow is not considered a concern because tm would need to be over 29,227 years in microseconds */
+    OS_time_t ostm = {tm * OS_TIME_TICKS_PER_USEC};
+    return ostm;
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -250,7 +316,8 @@ static inline int64 OS_TimeGetTotalNanoseconds(OS_time_t tm)
  */
 static inline OS_time_t OS_TimeFromTotalNanoseconds(int64 tm)
 {
-    return (OS_time_t) {.ticks = (tm / OS_TIME_TICK_RESOLUTION_NS)};
+    OS_time_t ostm = {tm / OS_TIME_TICK_RESOLUTION_NS};
+    return ostm;
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -462,7 +529,8 @@ static inline OS_time_t OS_TimeAssembleFromSubseconds(int64 seconds, uint32 subs
  */
 static inline OS_time_t OS_TimeAdd(OS_time_t time1, OS_time_t time2)
 {
-    return ((OS_time_t) {time1.ticks + time2.ticks});
+    OS_time_t ostm = {time1.ticks + time2.ticks};
+    return ostm;
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -476,7 +544,54 @@ static inline OS_time_t OS_TimeAdd(OS_time_t time1, OS_time_t time2)
  */
 static inline OS_time_t OS_TimeSubtract(OS_time_t time1, OS_time_t time2)
 {
-    return ((OS_time_t) {time1.ticks - time2.ticks});
+    OS_time_t ostm = {time1.ticks - time2.ticks};
+    return ostm;
+}
+
+/*-------------------------------------------------------------------------------------*/
+/**
+ * @brief Checks if two time values are equal
+ *
+ * @param[in]  time1 The first time value
+ * @param[in]  time2 The second time value
+ *
+ * @retval true if the two values are equal
+ * @retval false if the two values are not equal
+ */
+static inline bool OS_TimeEqual(OS_time_t time1, OS_time_t time2)
+{
+    return (time1.ticks == time2.ticks);
+}
+
+/*-------------------------------------------------------------------------------------*/
+/**
+ * @brief Checks the sign of the time value
+ *
+ * @param[in]  time The time to check
+ *
+ * @retval -1 if the time value is negative / below 0
+ * @retval 0 if the time value is 0
+ * @retval 1 if the time value is positive / above 0
+ */
+static inline int8_t OS_TimeGetSign(OS_time_t time)
+{
+    return (time.ticks > 0) - (time.ticks < 0);
+}
+
+/*-------------------------------------------------------------------------------------*/
+/**
+ * @brief Compares two time values
+ *
+ * @param[in]  time1 The first time
+ * @param[in]  time2 The second time
+ *
+ * @retval -1 if the time1 < time2
+ * @retval 0 if the times are equal
+ * @retval 1 if the time1 > time2
+ */
+static inline int8_t OS_TimeCompare(OS_time_t time1, OS_time_t time2)
+{
+    return OS_TimeGetSign(OS_TimeSubtract(time1, time2));
 }
 
 /**@}*/

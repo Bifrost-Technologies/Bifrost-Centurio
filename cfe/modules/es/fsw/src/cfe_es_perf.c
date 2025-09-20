@@ -74,7 +74,7 @@ void CFE_ES_SetupPerfVariables(uint32 ResetType)
 
         /* set data collection state to waiting for command state */
         Perf->MetaData.State                 = CFE_ES_PERF_IDLE;
-        Perf->MetaData.Mode                  = CFE_ES_PERF_TRIGGER_START;
+        Perf->MetaData.Mode                  = CFE_ES_PerfTrigger_START;
         Perf->MetaData.TriggerCount          = 0;
         Perf->MetaData.DataStart             = 0;
         Perf->MetaData.DataEnd               = 0;
@@ -155,8 +155,7 @@ int32 CFE_ES_StartPerfDataCmd(const CFE_ES_StartPerfDataCmd_t *data)
         PerfDumpState->PendingState == CFE_ES_PerfDumpState_IDLE)
     {
         /* Make sure Trigger Mode is valid */
-        /* cppcheck-suppress unsignedPositive */
-        if ((CmdPtr->TriggerMode >= CFE_ES_PERF_TRIGGER_START) && (CmdPtr->TriggerMode < CFE_ES_PERF_MAX_MODES))
+        if (CmdPtr->TriggerMode <= CFE_ES_PerfTrigger_END)
         {
             CFE_ES_Global.TaskData.CommandCounter++;
 
@@ -181,7 +180,7 @@ int32 CFE_ES_StartPerfDataCmd(const CFE_ES_StartPerfDataCmd_t *data)
             CFE_ES_Global.TaskData.CommandErrorCounter++;
             CFE_EVS_SendEvent(CFE_ES_PERF_STARTCMD_TRIG_ERR_EID, CFE_EVS_EventType_ERROR,
                               "Cannot start collecting performance data, trigger mode (%d) out of range (%d to %d)",
-                              (int)CmdPtr->TriggerMode, (int)CFE_ES_PERF_TRIGGER_START, (int)CFE_ES_PERF_TRIGGER_END);
+                              (int)CmdPtr->TriggerMode, (int)CFE_ES_PerfTrigger_START, (int)CFE_ES_PerfTrigger_END);
         }
     }
     else
@@ -462,11 +461,7 @@ bool CFE_ES_RunPerfLogDump(uint32 ElapsedTime, void *Arg)
                 {
                     CFE_ES_FileWriteByteCntErr(State->DataFileName, BlockSize, Status);
 
-                    /* skip to cleanup  */
-                    if (State->CurrentState < CFE_ES_PerfDumpState_CLEANUP)
-                    {
-                        State->PendingState = CFE_ES_PerfDumpState_CLEANUP;
-                    }
+                    State->PendingState = CFE_ES_PerfDumpState_CLEANUP;
                 }
                 else
                 {
@@ -669,21 +664,21 @@ void CFE_ES_PerfLogAdd(uint32 Marker, uint32 EntryExit)
         if (Perf->MetaData.State == CFE_ES_PERF_TRIGGERED)
         {
             Perf->MetaData.TriggerCount++;
-            if (Perf->MetaData.Mode == CFE_ES_PERF_TRIGGER_START)
+            if (Perf->MetaData.Mode == CFE_ES_PerfTrigger_START)
             {
                 if (Perf->MetaData.TriggerCount >= CFE_PLATFORM_ES_PERF_DATA_BUFFER_SIZE)
                 {
                     Perf->MetaData.State = CFE_ES_PERF_IDLE;
                 }
             }
-            else if (Perf->MetaData.Mode == CFE_ES_PERF_TRIGGER_CENTER)
+            else if (Perf->MetaData.Mode == CFE_ES_PerfTrigger_CENTER)
             {
                 if (Perf->MetaData.TriggerCount >= CFE_PLATFORM_ES_PERF_DATA_BUFFER_SIZE / 2)
                 {
                     Perf->MetaData.State = CFE_ES_PERF_IDLE;
                 }
             }
-            else if (Perf->MetaData.Mode == CFE_ES_PERF_TRIGGER_END)
+            else if (Perf->MetaData.Mode == CFE_ES_PerfTrigger_END)
             {
                 Perf->MetaData.State = CFE_ES_PERF_IDLE;
             }

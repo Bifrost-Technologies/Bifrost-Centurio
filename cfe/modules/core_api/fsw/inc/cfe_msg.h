@@ -59,6 +59,7 @@
  * \retval #CFE_MSG_BAD_ARGUMENT    \copybrief CFE_MSG_BAD_ARGUMENT
  */
 CFE_Status_t CFE_MSG_Init(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t MsgId, CFE_MSG_Size_t Size);
+
 /**\}*/
 
 /** \defgroup CFEAPIMSGHeaderPri cFE Message Primary Header APIs
@@ -697,6 +698,73 @@ CFE_Status_t CFE_MSG_SetMsgId(CFE_MSG_Message_t *MsgPtr, CFE_SB_MsgId_t MsgId);
  * \retval #CFE_MSG_BAD_ARGUMENT   \copybrief CFE_MSG_BAD_ARGUMENT
  */
 CFE_Status_t CFE_MSG_GetTypeFromMsgId(CFE_SB_MsgId_t MsgId, CFE_MSG_Type_t *Type);
+
+/**\}*/
+
+/** \defgroup CFEAPIMSGMsgIntegrity cFE Message Integrity APIs
+ * \{
+ */
+
+/*****************************************************************************/
+/**
+ * \brief Perform any necessary actions on a newly-created message, prior to sending
+ *
+ * \par Description
+ *          This routine updates and/or appends any necessary fields on a message, is
+ *          invoked via SB just prior to broadcasting the message.  The actions include
+ *          updating any values that should be computed/updated per message, including:
+ *                  - setting the sequence number
+ *                  - updating the timestamp, if present
+ *                  - computing any error control or checksum fields, if present
+ *
+ *          The MSG module implementation determines which header fields meet this criteria
+ *          and how they should be computed.
+ *
+ *          The BufferSize parameter indicates the allocation size message of the buffer that
+ *          holds the message (i.e. the message envelope size).  In some implementations, the
+ *          allocated buffer may include extra space in order to append a CRC or digital signature.
+ *
+ * \sa CFE_MSG_VerificationAction
+ *
+ * \param[inout] MsgPtr       A pointer to the buffer that contains the message @nonnull.
+ * \param[in]    BufferSize   The size of the buffer encapsulating the message
+ * \param[out]   IsAcceptable Output variable to be set, indicates message acceptability @nonnull
+ *
+ * \return Execution status, see \ref CFEReturnCodes
+ * \retval #CFE_SUCCESS             \copybrief CFE_SUCCESS
+ * \retval #CFE_MSG_BAD_ARGUMENT    \copybrief CFE_MSG_BAD_ARGUMENT
+ */
+CFE_Status_t CFE_MSG_OriginationAction(CFE_MSG_Message_t *MsgPtr, size_t BufferSize, bool *IsAcceptable);
+
+/*****************************************************************************/
+/**
+ * \brief Checks message integrity/acceptability
+ *
+ * \par Description
+ *        This routine validates that any error-control field(s) in the message header
+ *        matches the expected value.
+ *
+ *        The specific function of this API is entirely dependent on the header fields
+ *        and may be a no-op if no error checking is implemented.  In that case, it
+ *        will always output "true".
+ *
+ * \note  Due to the fact that software bus uses a multicast architecture, this function
+ *        must not modify the message, as the buffer may be shared among multiple receivers.
+ *        This should generally be the inverse of CFE_MSG_OriginationAction(), but on the
+ *        origination side it may update header fields and/or modify the message, on
+ *        the verification/receive side it must only check those fields, not modify them.
+ *
+ * \sa CFE_MSG_OriginationAction
+ *
+ * \param[in]  MsgPtr        Message Pointer @nonnull
+ * \param[in]  BufferSize    The size of the buffer encapsulating the message
+ * \param[out] IsAcceptable  Output variable to be set, indicates message acceptability @nonnull
+ *
+ * \return Execution status, see \ref CFEReturnCodes
+ * \retval #CFE_SUCCESS            \copybrief CFE_SUCCESS
+ * \retval #CFE_MSG_BAD_ARGUMENT   \copybrief CFE_MSG_BAD_ARGUMENT
+ */
+CFE_Status_t CFE_MSG_VerificationAction(const CFE_MSG_Message_t *MsgPtr, size_t BufferSize, bool *IsAcceptable);
 
 /**\}*/
 

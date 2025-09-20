@@ -52,6 +52,7 @@
 #include <errno.h>
 
 #include "os-impl-sockets.h"
+#include "os-shared-clock.h"
 #include "os-shared-file.h"
 #include "os-shared-select.h"
 #include "os-shared-sockets.h"
@@ -214,16 +215,14 @@ int32 OS_SocketOpen_Impl(const OS_object_token_t *token)
  *           See prototype for argument/return detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_SocketBind_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr)
+int32 OS_SocketBindAddress_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr)
 {
     int                             os_result;
     socklen_t                       addrlen;
     const struct sockaddr *         sa;
     OS_impl_file_internal_record_t *impl;
-    OS_stream_internal_record_t *   stream;
 
-    impl   = OS_OBJECT_TABLE_GET(OS_impl_filehandle_table, *token);
-    stream = OS_OBJECT_TABLE_GET(OS_stream_table, *token);
+    impl = OS_OBJECT_TABLE_GET(OS_impl_filehandle_table, *token);
 
     sa = (const struct sockaddr *)&Addr->AddrData;
 
@@ -254,16 +253,6 @@ int32 OS_SocketBind_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Ad
         return OS_ERROR;
     }
 
-    /* Start listening on the socket (implied for stream sockets) */
-    if (stream->socket_type == OS_SocketType_STREAM)
-    {
-        os_result = listen(impl->fd, 10);
-        if (os_result < 0)
-        {
-            OS_DEBUG("listen: %s\n", strerror(errno));
-            return OS_ERROR;
-        }
-    }
     return OS_SUCCESS;
 }
 
@@ -273,7 +262,30 @@ int32 OS_SocketBind_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Ad
  *           See prototype for argument/return detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_SocketConnect_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr, int32 timeout)
+int32 OS_SocketListen_Impl(const OS_object_token_t *token)
+{
+    int                             os_result;
+    OS_impl_file_internal_record_t *impl;
+
+    impl = OS_OBJECT_TABLE_GET(OS_impl_filehandle_table, *token);
+
+    os_result = listen(impl->fd, 10);
+    if (os_result < 0)
+    {
+        OS_DEBUG("listen: %s\n", strerror(errno));
+        return OS_ERROR;
+    }
+
+    return OS_SUCCESS;
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per internal OSAL API
+ *           See prototype for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketConnect_Impl(const OS_object_token_t *token, const OS_SockAddr_t *Addr, OS_time_t abs_timeout)
 {
     int32                           return_code;
     int                             os_status;
@@ -334,7 +346,7 @@ int32 OS_SocketConnect_Impl(const OS_object_token_t *token, const OS_SockAddr_t 
                 operation = OS_STREAM_STATE_WRITABLE;
                 if (impl->selectable)
                 {
-                    return_code = OS_SelectSingle_Impl(token, &operation, timeout);
+                    return_code = OS_SelectSingle_Impl(token, &operation, abs_timeout);
                 }
                 if (return_code == OS_SUCCESS)
                 {
@@ -411,7 +423,7 @@ int32 OS_SocketShutdown_Impl(const OS_object_token_t *token, OS_SocketShutdownMo
  *
  *-----------------------------------------------------------------*/
 int32 OS_SocketAccept_Impl(const OS_object_token_t *sock_token, const OS_object_token_t *conn_token,
-                           OS_SockAddr_t *Addr, int32 timeout)
+                           OS_SockAddr_t *Addr, OS_time_t abs_timeout)
 {
     int32                           return_code;
     uint32                          operation;
@@ -425,7 +437,7 @@ int32 OS_SocketAccept_Impl(const OS_object_token_t *sock_token, const OS_object_
     operation = OS_STREAM_STATE_READABLE;
     if (sock_impl->selectable)
     {
-        return_code = OS_SelectSingle_Impl(sock_token, &operation, timeout);
+        return_code = OS_SelectSingle_Impl(sock_token, &operation, abs_timeout);
     }
     else
     {
@@ -465,7 +477,7 @@ int32 OS_SocketAccept_Impl(const OS_object_token_t *sock_token, const OS_object_
  *
  *-----------------------------------------------------------------*/
 int32 OS_SocketRecvFrom_Impl(const OS_object_token_t *token, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr,
-                             int32 timeout)
+                             OS_time_t abs_timeout)
 {
     int32                           return_code;
     int                             os_result;
@@ -496,11 +508,12 @@ int32 OS_SocketRecvFrom_Impl(const OS_object_token_t *token, void *buffer, size_
     if (impl->selectable)
     {
         waitflags   = MSG_DONTWAIT;
-        return_code = OS_SelectSingle_Impl(token, &operation, timeout);
+        return_code = OS_SelectSingle_Impl(token, &operation, abs_timeout);
     }
     else
     {
-        if (timeout == 0)
+        /* This is a backup option - check if the abs timeout would be a poll/check op */
+        if (OS_TimeToRelativeMilliseconds(abs_timeout) == OS_CHECK)
         {
             waitflags = MSG_DONTWAIT;
         }

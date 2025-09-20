@@ -112,7 +112,11 @@ void *OCS_malloc(size_t sz)
         PoolStart = (PoolStart + MPOOL_ALIGN - 1) & ~((cpuaddr)MPOOL_ALIGN - 1);
         PoolSize  = PoolEnd - PoolStart;
 
-        if (PoolSize > (MPOOL_ALIGN * 2))
+        /*
+         * Verify PollSize is greater than minimun size and
+         * that PoolStart didn't go past the PoolEnd during alignment.
+         */
+        if (PoolSize > (MPOOL_ALIGN * 2) && PoolStart < PoolEnd)
         {
             Rec       = (struct MPOOL_REC *)PoolStart;
             NextBlock = PoolStart + MPOOL_ALIGN;
@@ -150,7 +154,7 @@ void *OCS_malloc(size_t sz)
         return NULL;
     }
 
-    NextSize  = (NextSize + MPOOL_ALIGN - 1) & ~((size_t)MPOOL_ALIGN);
+    NextSize  = (NextSize + MPOOL_ALIGN - 1) & ~((size_t)MPOOL_ALIGN - 1);
     NextBlock = Rec->BlockAddr + MPOOL_ALIGN;
     Rec->BlockAddr += NextSize;
     Rec->Size += NextSize;

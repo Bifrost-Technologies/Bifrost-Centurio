@@ -30,6 +30,7 @@
 #include "cfe_test.h"
 #include "cfe_test_table.h"
 #include "cfe_msgids.h"
+#include "cfe_test_msgids.h"
 
 void TestGetStatus(void)
 {
@@ -57,7 +58,7 @@ void TestGetInfo(void)
     UtAssert_INT32_EQ(CFE_TBL_GetInfo(&TblInfo, NULL), CFE_TBL_BAD_ARGUMENT);
 
     /* This is only checking some parts of the TblInfo struct */
-    size_t expectedSize        = sizeof(TBL_TEST_Table_t);
+    size_t expectedSize        = sizeof(CFE_TEST_TestTable_t);
     uint32 expectedNumUsers    = 1;
     bool   expectedTableLoaded = false;
     bool   expectedDumpOnly    = false;
@@ -76,7 +77,7 @@ void TestGetInfo(void)
 void TestNotifyByMessage(void)
 {
     CFE_TBL_Handle_t  SharedTblHandle = CFE_TBL_BAD_TABLE_HANDLE;
-    const char *      SharedTblName   = "SAMPLE_APP.SampleAppTable";
+    const char *      SharedTblName   = CFE_ASSERT_SHARED_TBL_NAME;
     CFE_SB_MsgId_t    TestMsgId       = CFE_SB_ValueToMsgId(CFE_TEST_CMD_MID);
     CFE_MSG_FcnCode_t TestCmdCode     = 0;
     uint32            TestParameter   = 0;

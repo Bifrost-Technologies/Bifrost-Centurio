@@ -11,7 +11,7 @@ ci_lab is a simple command uplink application that accepts CCSDS telecommand pac
 
 ## Known issues
 
-Dependence on cfe platform config header is undesirable, and the check is not endian safe. As a lab application, extensive testing is not performed prior to release and only minimal functionality is included.
+As a lab application, extensive testing is not performed prior to release and only minimal functionality is included.
 
 ## Getting Help
 

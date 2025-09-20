@@ -998,14 +998,7 @@ CFE_Status_t CFE_ES_WriteToSysLog(const char *SpecStringPtr, ...) OS_PRINTF(1, 2
 **                          allows the user to calculate the CRC of non-contiguous blocks as
 **                          a single value.  Nominally, the user should set this value to zero.
 **
-** \param[in]   TypeCRC     One of the following CRC algorithm selections:
-**                          \arg \c CFE_ES_CrcType_CRC_8 -  (Not currently implemented)
-**                          \arg \c CFE_ES_CrcType_CRC_16 - CRC-16/ARC <BR>
-**                                  Polynomial: 0x8005 <BR>
-**                                  Initialization: 0x0000 <BR>
-**                                  Reflect Input/Output: true <BR>
-**                                  XorOut: 0x0000
-**                          \arg \c CFE_ES_CrcType_CRC_32 - (not currently implemented)
+** \param[in]   TypeCRC     One of the following CRC algorithm selections defined in CFE_ES_CrcType_Enum_t
 **
 ** \return The result of the CRC calculation on the specified memory block.
 **         If the TypeCRC is unimplemented will return 0.
@@ -1458,7 +1451,7 @@ CFE_Status_t CFE_ES_GetMemPoolStats(CFE_ES_MemPoolStats_t *BufPtr, CFE_ES_MemHan
 ** \par Description
 **        This macro logs the entry or start event/marker for the specified
 **        entry \c id. This macro, in conjunction with the #CFE_ES_PerfLogExit,
-**        is used by the Software Performance Analysis tool (see section 5.15).
+**        is used by the Software Performance Analysis tool.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -1477,7 +1470,7 @@ CFE_Status_t CFE_ES_GetMemPoolStats(CFE_ES_MemPoolStats_t *BufPtr, CFE_ES_MemHan
 ** \par Description
 **        This macro logs the exit or end event/marker for the specified
 **        entry \c id. This macro, in conjunction with the #CFE_ES_PerfLogEntry,
-**        is used by the Software Performance Analysis tool (see section 5.15).
+**        is used by the Software Performance Analysis tool.
 **
 ** \par Assumptions, External Events, and Notes:
 **        None
@@ -1498,10 +1491,14 @@ CFE_Status_t CFE_ES_GetMemPoolStats(CFE_ES_MemPoolStats_t *BufPtr, CFE_ES_MemHan
 ** \par Description
 **        This function logs the entry and exit marker for the specified
 **        \c id. This function is used by the Software Performance Analysis
-**        tool (see section 5.15).
+**        tool.
 **
 ** \par Assumptions, External Events, and Notes:
-
+**
+**  \c Marker limited to the range of 0 to
+**       #CFE_MISSION_ES_PERF_MAX_IDS - 1. Any performance ids outside of this
+**       range will be ignored and will be flagged as an error.
+**
 **  This function implements a circular buffer using an array.
 **      DataStart points to first stored entry
 **      DataEnd points to next available entry

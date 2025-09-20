@@ -1,5 +1,22 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev22
+- Include PRID and SCID in table files
+- Check return from chmod
+- Check return value of stat()
+- Move variables declared mid-function to the top
+- See <https://github.com/nasa/elf2cfetbl/pull/147>, <https://github.com/nasa/elf2cfetbl/pull/124>, <https://github.com/nasa/elf2cfetbl/pull/125>, and <https://github.com/nasa/elf2cfetbl/pull/127>
+
+## Development Build: equuleus-rc1+dev10
+- updating ELF2CFETBL to use new versioning system
+- move scripts for table building to elf2cfetbl tool
+- See <https://github.com/nasa/elf2cfetbl/pull/144> and <https://github.com/nasa/elf2cfetbl/pull/143>
+
+## Development Build: v3.3.0-rc4+dev36
+- Adds CheckStatus helper functions
+- Reduce cyclomatic complexity of GetElfHeader
+- See <https://github.com/nasa/elf2cfetbl/pull/137> and <https://github.com/nasa/elf2cfetbl/pull/136>
+
 ## Development Build: v3.3.0-rc4+dev30
 - Remove C++-style comments
 - See <https://github.com/nasa/elf2cfetbl/pull/119>

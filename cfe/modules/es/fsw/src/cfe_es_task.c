@@ -277,6 +277,7 @@ int32 CFE_ES_TaskInit(void)
     uint32  SizeofCfeSegment;
     cpuaddr CfeSegmentAddr;
     uint8   VersionNumber[4];
+    char    VersionString[CFE_CFG_MAX_VERSION_STR_LEN];
 
     /*
     ** Initialize task command execution counters
@@ -394,8 +395,10 @@ int32 CFE_ES_TaskInit(void)
     /*
     ** Task startup event message.
     */
-    Status = CFE_EVS_SendEvent(CFE_ES_INIT_INF_EID, CFE_EVS_EventType_INFORMATION, "cFE ES Initialized: %s",
-                               CFE_VERSION_STRING);
+    CFE_Config_GetVersionString(VersionString, CFE_CFG_MAX_VERSION_STR_LEN, "cFE", CFE_SRC_VERSION, CFE_BUILD_CODENAME,
+                                CFE_LAST_OFFICIAL);
+    Status =
+        CFE_EVS_SendEvent(CFE_ES_INIT_INF_EID, CFE_EVS_EventType_INFORMATION, "cFE ES Initialized: %s", VersionString);
     if (Status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("%s: Error sending init event:RC=0x%08X\n", __func__, (unsigned int)Status);
@@ -440,222 +443,7 @@ int32 CFE_ES_TaskInit(void)
  * See description in header file for argument/return detail
  *
  *-----------------------------------------------------------------*/
-void CFE_ES_TaskPipe(CFE_SB_Buffer_t *SBBufPtr)
-{
-    CFE_SB_MsgId_t    MessageID   = CFE_SB_INVALID_MSG_ID;
-    CFE_MSG_FcnCode_t CommandCode = 0;
-
-    CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MessageID);
-    switch (CFE_SB_MsgIdToValue(MessageID))
-    {
-        /*
-        ** Housekeeping telemetry request
-        */
-        case CFE_ES_SEND_HK_MID:
-            CFE_ES_HousekeepingCmd((CFE_ES_SendHkCmd_t *)SBBufPtr);
-            break;
-
-        /*
-        ** ES task ground commands
-        */
-        case CFE_ES_CMD_MID:
-
-            CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &CommandCode);
-            switch (CommandCode)
-            {
-                case CFE_ES_NOOP_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_NoopCmd_t)))
-                    {
-                        CFE_ES_NoopCmd((CFE_ES_NoopCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_RESET_COUNTERS_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_ResetCountersCmd_t)))
-                    {
-                        CFE_ES_ResetCountersCmd((CFE_ES_ResetCountersCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_RESTART_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_RestartCmd_t)))
-                    {
-                        CFE_ES_RestartCmd((CFE_ES_RestartCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_START_APP_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_StartAppCmd_t)))
-                    {
-                        CFE_ES_StartAppCmd((CFE_ES_StartAppCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_STOP_APP_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_StopAppCmd_t)))
-                    {
-                        CFE_ES_StopAppCmd((CFE_ES_StopAppCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_RESTART_APP_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_RestartAppCmd_t)))
-                    {
-                        CFE_ES_RestartAppCmd((CFE_ES_RestartAppCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_RELOAD_APP_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_ReloadAppCmd_t)))
-                    {
-                        CFE_ES_ReloadAppCmd((CFE_ES_ReloadAppCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_QUERY_ONE_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_QueryOneCmd_t)))
-                    {
-                        CFE_ES_QueryOneCmd((CFE_ES_QueryOneCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_QUERY_ALL_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_QueryAllCmd_t)))
-                    {
-                        CFE_ES_QueryAllCmd((CFE_ES_QueryAllCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_QUERY_ALL_TASKS_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_QueryAllTasksCmd_t)))
-                    {
-                        CFE_ES_QueryAllTasksCmd((CFE_ES_QueryAllTasksCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_CLEAR_SYSLOG_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_ClearSysLogCmd_t)))
-                    {
-                        CFE_ES_ClearSysLogCmd((CFE_ES_ClearSysLogCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_WRITE_SYSLOG_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_WriteSysLogCmd_t)))
-                    {
-                        CFE_ES_WriteSysLogCmd((CFE_ES_WriteSysLogCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_OVER_WRITE_SYSLOG_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_OverWriteSysLogCmd_t)))
-                    {
-                        CFE_ES_OverWriteSysLogCmd((CFE_ES_OverWriteSysLogCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_CLEAR_ER_LOG_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_ClearERLogCmd_t)))
-                    {
-                        CFE_ES_ClearERLogCmd((CFE_ES_ClearERLogCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_WRITE_ER_LOG_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_WriteERLogCmd_t)))
-                    {
-                        CFE_ES_WriteERLogCmd((CFE_ES_WriteERLogCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_START_PERF_DATA_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_StartPerfDataCmd_t)))
-                    {
-                        CFE_ES_StartPerfDataCmd((CFE_ES_StartPerfDataCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_STOP_PERF_DATA_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_StopPerfDataCmd_t)))
-                    {
-                        CFE_ES_StopPerfDataCmd((CFE_ES_StopPerfDataCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_SET_PERF_FILTER_MASK_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_SetPerfFilterMaskCmd_t)))
-                    {
-                        CFE_ES_SetPerfFilterMaskCmd((CFE_ES_SetPerfFilterMaskCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_SET_PERF_TRIGGER_MASK_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_SetPerfTriggerMaskCmd_t)))
-                    {
-                        CFE_ES_SetPerfTriggerMaskCmd((CFE_ES_SetPerfTriggerMaskCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_RESET_PR_COUNT_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_ResetPRCountCmd_t)))
-                    {
-                        CFE_ES_ResetPRCountCmd((CFE_ES_ResetPRCountCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_SET_MAX_PR_COUNT_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_SetMaxPRCountCmd_t)))
-                    {
-                        CFE_ES_SetMaxPRCountCmd((CFE_ES_SetMaxPRCountCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_DELETE_CDS_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_DeleteCDSCmd_t)))
-                    {
-                        CFE_ES_DeleteCDSCmd((CFE_ES_DeleteCDSCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_SEND_MEM_POOL_STATS_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_SendMemPoolStatsCmd_t)))
-                    {
-                        CFE_ES_SendMemPoolStatsCmd((CFE_ES_SendMemPoolStatsCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_ES_DUMP_CDS_REGISTRY_CC:
-                    if (CFE_ES_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_ES_DumpCDSRegistryCmd_t)))
-                    {
-                        CFE_ES_DumpCDSRegistryCmd((CFE_ES_DumpCDSRegistryCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                default:
-                    CFE_EVS_SendEvent(CFE_ES_CC1_ERR_EID, CFE_EVS_EventType_ERROR,
-                                      "Invalid ground command code: ID = 0x%X, CC = %d",
-                                      (unsigned int)CFE_SB_MsgIdToValue(MessageID), (int)CommandCode);
-                    CFE_ES_Global.TaskData.CommandErrorCounter++;
-                    break;
-            }
-            break;
-
-        default:
-
-            CFE_EVS_SendEvent(CFE_ES_MID_ERR_EID, CFE_EVS_EventType_ERROR, "Invalid command pipe message ID: 0x%X",
-                              (unsigned int)CFE_SB_MsgIdToValue(MessageID));
-            CFE_ES_Global.TaskData.CommandErrorCounter++;
-            break;
-    }
-}
-
-/*----------------------------------------------------------------
- *
- * Application-scope internal function
- * See description in header file for argument/return detail
- *
- *-----------------------------------------------------------------*/
-int32 CFE_ES_HousekeepingCmd(const CFE_ES_SendHkCmd_t *data)
+int32 CFE_ES_SendHkCmd(const CFE_ES_SendHkCmd_t *data)
 {
     OS_heap_prop_t HeapProp;
     int32          OsStatus;
@@ -744,9 +532,9 @@ int32 CFE_ES_HousekeepingCmd(const CFE_ES_SendHkCmd_t *data)
     }
     else
     {
-        CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree    = 0;
-        CFE_ES_Global.TaskData.HkPacket.Payload.HeapBlocksFree   = 0;
-        CFE_ES_Global.TaskData.HkPacket.Payload.HeapMaxBlockSize = 0;
+        CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree    = CFE_ES_MEMOFFSET_C(0);
+        CFE_ES_Global.TaskData.HkPacket.Payload.HeapBlocksFree   = CFE_ES_MEMOFFSET_C(0);
+        CFE_ES_Global.TaskData.HkPacket.Payload.HeapMaxBlockSize = CFE_ES_MEMOFFSET_C(0);
     }
 
     /*
@@ -851,6 +639,8 @@ int32 CFE_ES_StartAppCmd(const CFE_ES_StartAppCmd_t *data)
     char                                LocalAppName[OS_MAX_API_NAME];
     CFE_ES_AppStartParams_t             StartParams;
 
+    memset(&StartParams, 0, sizeof(StartParams));
+
     /* Create local copies of all input strings and ensure null termination */
     Result = CFE_FS_ParseInputFileNameEx(StartParams.BasicInfo.FileName, cmd->AppFileName,
                                          sizeof(StartParams.BasicInfo.FileName), sizeof(cmd->AppFileName), NULL,
@@ -900,13 +690,10 @@ int32 CFE_ES_StartAppCmd(const CFE_ES_StartAppCmd_t *data)
     else
     {
         /* If stack size was provided, use it, otherwise use default. */
-        if (cmd->StackSize == 0)
+        StartParams.MainTaskInfo.StackSize = CFE_ES_MEMOFFSET_TO_SIZET(cmd->StackSize);
+        if (StartParams.MainTaskInfo.StackSize == 0)
         {
             StartParams.MainTaskInfo.StackSize = CFE_PLATFORM_ES_DEFAULT_STACK_SIZE;
-        }
-        else
-        {
-            StartParams.MainTaskInfo.StackSize = cmd->StackSize;
         }
 
         StartParams.MainTaskInfo.Priority = cmd->Priority;
@@ -1169,7 +956,7 @@ int32 CFE_ES_QueryAllCmd(const CFE_ES_QueryAllCmd_t *data)
     osal_id_t                           FileDescriptor = OS_OBJECT_ID_UNDEFINED;
     uint32                              i;
     uint32                              EntryCount = 0;
-    uint32                              FileSize   = 0;
+    size_t                              FileSize   = 0;
     int32                               OsStatus;
     int32                               Result;
     CFE_ES_AppInfo_t                    AppInfo;
@@ -1306,8 +1093,8 @@ int32 CFE_ES_QueryAllCmd(const CFE_ES_QueryAllCmd_t *data)
         OS_close(FileDescriptor);
         CFE_ES_Global.TaskData.CommandCounter++;
         CFE_EVS_SendEvent(CFE_ES_ALL_APPS_EID, CFE_EVS_EventType_DEBUG,
-                          "App Info file written to %s, Entries=%d, FileSize=%d", QueryAllFilename, (int)EntryCount,
-                          (int)FileSize);
+                          "App Info file written to %s, Entries=%d, FileSize=%lu", QueryAllFilename, (int)EntryCount,
+                          (unsigned long)FileSize);
     }
     else
     {
@@ -1329,7 +1116,7 @@ int32 CFE_ES_QueryAllTasksCmd(const CFE_ES_QueryAllTasksCmd_t *data)
     osal_id_t                           FileDescriptor = OS_OBJECT_ID_UNDEFINED;
     uint32                              i;
     uint32                              EntryCount = 0;
-    uint32                              FileSize   = 0;
+    size_t                              FileSize   = 0;
     int32                               OsStatus;
     int32                               Result;
     CFE_ES_TaskInfo_t                   TaskInfo;
@@ -1458,8 +1245,8 @@ int32 CFE_ES_QueryAllTasksCmd(const CFE_ES_QueryAllTasksCmd_t *data)
         OS_close(FileDescriptor);
         CFE_ES_Global.TaskData.CommandCounter++;
         CFE_EVS_SendEvent(CFE_ES_TASKINFO_EID, CFE_EVS_EventType_DEBUG,
-                          "Task Info file written to %s, Entries=%d, FileSize=%d", QueryAllFilename, (int)EntryCount,
-                          (int)FileSize);
+                          "Task Info file written to %s, Entries=%d, FileSize=%lu", QueryAllFilename, (int)EntryCount,
+                          (unsigned long)FileSize);
     }
     else
     {
@@ -1677,40 +1464,6 @@ int32 CFE_ES_WriteERLogCmd(const CFE_ES_WriteERLogCmd_t *data)
     }
 
     return CFE_SUCCESS;
-}
-
-/*----------------------------------------------------------------
- *
- * Application-scope internal function
- * See description in header file for argument/return detail
- *
- *-----------------------------------------------------------------*/
-bool CFE_ES_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
-{
-    bool              result       = true;
-    CFE_MSG_Size_t    ActualLength = 0;
-    CFE_MSG_FcnCode_t FcnCode      = 0;
-    CFE_SB_MsgId_t    MsgId        = CFE_SB_INVALID_MSG_ID;
-
-    CFE_MSG_GetSize(MsgPtr, &ActualLength);
-
-    /*
-     ** Verify the command packet length
-     */
-    if (ExpectedLength != ActualLength)
-    {
-        CFE_MSG_GetMsgId(MsgPtr, &MsgId);
-        CFE_MSG_GetFcnCode(MsgPtr, &FcnCode);
-
-        CFE_EVS_SendEvent(CFE_ES_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Invalid msg length: ID = 0x%X,  CC = %u, Len = %u, Expected = %u",
-                          (unsigned int)CFE_SB_MsgIdToValue(MsgId), (unsigned int)FcnCode, (unsigned int)ActualLength,
-                          (unsigned int)ExpectedLength);
-        result = false;
-        CFE_ES_Global.TaskData.CommandErrorCounter++;
-    }
-
-    return result;
 }
 
 /*----------------------------------------------------------------

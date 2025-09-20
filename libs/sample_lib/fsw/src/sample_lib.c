@@ -27,6 +27,8 @@
 #include "sample_lib_version.h"
 #include "sample_lib_internal.h"
 
+#include "cfe_config.h"
+
 /* for "strncpy()" */
 #include <string.h>
 
@@ -43,6 +45,8 @@ char SAMPLE_LIB_Buffer[SAMPLE_LIB_BUFFER_SIZE];
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 SAMPLE_LIB_Init(void)
 {
+    char VersionString[SAMPLE_LIB_CFG_MAX_VERSION_STR_LEN];
+
     /*
      * Call a C library function, like strcpy(), and test its result.
      *
@@ -61,7 +65,10 @@ int32 SAMPLE_LIB_Init(void)
     /* ensure termination */
     SAMPLE_LIB_Buffer[sizeof(SAMPLE_LIB_Buffer) - 1] = 0;
 
-    OS_printf("SAMPLE Lib Initialized.%s\n", SAMPLE_LIB_VERSION_STRING);
+    CFE_Config_GetVersionString(VersionString, SAMPLE_LIB_CFG_MAX_VERSION_STR_LEN, "Sample Lib",
+        SAMPLE_LIB_VERSION, SAMPLE_LIB_BUILD_CODENAME, SAMPLE_LIB_LAST_OFFICIAL);
+
+    OS_printf("SAMPLE Lib Initialized.%s\n", VersionString);
 
     return CFE_SUCCESS;
 }

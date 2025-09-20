@@ -25,16 +25,22 @@
 
 /* Development Build Macro Definitions */
 
-#define CI_LAB_BUILD_NUMBER 39 /*!< Development Build: Number of commits since baseline */
-#define CI_LAB_BUILD_BASELINE \
-    "v2.5.0-rc4" /*!< Development Build: git tag that is the base for the current development */
+#define CI_LAB_BUILD_NUMBER     61 /*!< Development Build: Number of commits since baseline */
+#define CI_LAB_BUILD_BASELINE   "equuleus-rc1" /*!< Development Build: git tag that is the base for the current development */
+#define CI_LAB_BUILD_DEV_CYCLE 	"equuleus-rc2" /**< @brief Development: Release name for current development cycle */
+#define CI_LAB_BUILD_CODENAME   "Equuleus" /**< @brief: Development: Code name for the current build */
 
 /*
  * Version Macros, see \ref cfsversions for definitions.
  */
 #define CI_LAB_MAJOR_VERSION 2  /*!< @brief Major version number */
 #define CI_LAB_MINOR_VERSION 3  /*!< @brief Minor version number */
-#define CI_LAB_REVISION      99 /*!< @brief Revision version number. Value of 99 indicates a development version.*/
+#define CI_LAB_REVISION      0  /*!< @brief Revision version number. Value of 0 indicates a development version.*/
+
+/**
+ * @brief Last official release.
+ */
+#define CI_LAB_LAST_OFFICIAL "v2.3.0"
 
 /*!
  * @brief Mission revision.
@@ -54,12 +60,12 @@
  */
 #define CI_LAB_VERSION CI_LAB_BUILD_BASELINE "+dev" CI_LAB_STR(CI_LAB_BUILD_NUMBER)
 
-/*! @brief Development Build Version String.
- * @details Reports the current development build's baseline, number, and name. Also includes a note about the latest
- * official version. @n See @ref cfsversions for format differences between development and release versions.
+/**
+ * @brief Max Version String length.
+ * 
+ * Maximum length that a CI Lab version string can be.
+ * 
  */
-#define CI_LAB_VERSION_STRING                       \
-    " CI Lab App DEVELOPMENT BUILD " CI_LAB_VERSION \
-    ", Last Official Release: v2.3.0" /* For full support please use this version */
+#define CI_LAB_CFG_MAX_VERSION_STR_LEN 256
 
 #endif

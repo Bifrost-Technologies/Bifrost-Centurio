@@ -49,55 +49,68 @@ const char *TIME_SYSLOG_MSGS[] = {NULL,
                                   "%s: Application Init Failed,RC=0x%08X\n",
                                   "%s: Failed invalid arguments\n"};
 
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_SEND_HK  = {.MsgId =
-                                                                     CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_SEND_HK_MID)};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_TONE_CMD = {.MsgId =
-                                                                      CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_TONE_CMD_MID)};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_DATA_CMD = {.MsgId =
-                                                                      CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_DATA_CMD_MID)};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_1HZ_CMD  = {.MsgId =
-                                                                     CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_1HZ_CMD_MID)};
+/* Normal dispatching registers the MsgID+CC in order to follow a
+ * certain path through a series of switch statements */
+#define TIME_UT_MID_DISPATCH(intf) \
+    .Method = UT_TaskPipeDispatchMethod_MSG_ID_CC, .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_##intf##_MID)
+
+#define TIME_UT_MSG_DISPATCH(intf, cmd)       TIME_UT_MID_DISPATCH(intf), UT_TPD_SETSIZE(CFE_TIME_##cmd)
+#define TIME_UT_CC_DISPATCH(intf, cc, cmd)    TIME_UT_MSG_DISPATCH(intf, cmd), UT_TPD_SETCC(cc)
+#define TIME_UT_ERROR_DISPATCH(intf, cc, err) TIME_UT_MID_DISPATCH(intf), UT_TPD_SETCC(cc), UT_TPD_SETERR(err)
+
+/* NOTE: Automatic formatting of this table tends to make it harder to read. */
+/* clang-format off */
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_SEND_HK =
+    { TIME_UT_MSG_DISPATCH(SEND_HK,SendHkCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_TONE_CMD =
+    { TIME_UT_MSG_DISPATCH(TONE_CMD,ToneSignalCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_DATA_CMD =
+    { TIME_UT_MSG_DISPATCH(DATA_CMD,ToneDataCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_ONEHZ_CMD =
+    { TIME_UT_MSG_DISPATCH(ONEHZ_CMD,OneHzCmd) };
 
 #if (CFE_PLATFORM_TIME_CFG_SERVER == true)
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_SEND_CMD = {.MsgId =
-                                                                      CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_SEND_CMD_MID)};
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_SEND_CMD =
+    { TIME_UT_MSG_DISPATCH(SEND_CMD,FakeToneCmd) };
 #endif
 
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_NOOP_CC = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID),
-                                                                     .CommandCode = CFE_TIME_NOOP_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_RESET_COUNTERS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_RESET_COUNTERS_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SEND_DIAGNOSTIC_TLM_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SEND_DIAGNOSTIC_TLM_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_STATE_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_STATE_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_SOURCE_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_SOURCE_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_SIGNAL_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_SIGNAL_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_DELAY_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_ADD_DELAY_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_DELAY_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SUB_DELAY_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_TIME_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_TIME_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_MET_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_MET_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_STCF_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_STCF_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_LEAP_SECONDS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SET_LEAP_SECONDS_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_ADJUST_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_ADD_ADJUST_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_ADJUST_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SUB_ADJUST_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_1HZ_ADJUSTMENT_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_ADD_1HZ_ADJUSTMENT_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_1HZ_ADJUSTMENT_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = CFE_TIME_SUB_1HZ_ADJUSTMENT_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_INVALID_MID = {.MsgId = CFE_SB_MSGID_RESERVED, .CommandCode = 0};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_INVALID_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_CMD_MID), .CommandCode = 0x7F};
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_NOOP_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_NOOP_CC, NoopCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_RESET_COUNTERS_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_RESET_COUNTERS_CC, ResetCountersCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SEND_DIAGNOSTIC_TLM_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SEND_DIAGNOSTIC_CC, SendDiagnosticCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_STATE_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_STATE_CC, SetStateCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_SOURCE_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_SOURCE_CC, SetSourceCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_SIGNAL_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_SIGNAL_CC, SetSignalCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_DELAY_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_ADD_DELAY_CC, AddDelayCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_DELAY_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SUB_DELAY_CC, SubDelayCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_TIME_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_TIME_CC, SetTimeCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_MET_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_MET_CC, SetMETCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_STCF_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_STCF_CC, SetSTCFCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SET_LEAP_SECONDS_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SET_LEAP_SECONDS_CC, SetLeapSecondsCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_ADJUST_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_ADD_ADJUST_CC, AddAdjustCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_ADJUST_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SUB_ADJUST_CC, SubAdjustCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_ADD_ONEHZ_ADJUSTMENT_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_ADD_ONE_HZ_ADJUSTMENT_CC, AddOneHzAdjustmentCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_SUB_ONEHZ_ADJUSTMENT_CC =
+    { TIME_UT_CC_DISPATCH(CMD, CFE_TIME_SUB_ONE_HZ_ADJUSTMENT_CC, SubOneHzAdjustmentCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_INVALID_MID =
+    { .Method = UT_TaskPipeDispatchMethod_MSG_ID_CC, UT_TPD_SETERR(CFE_STATUS_UNKNOWN_MSG_ID) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_TIME_CMD_INVALID_CC =
+    { TIME_UT_ERROR_DISPATCH(CMD, -1, CFE_STATUS_BAD_COMMAND_CODE) };
+/* clang-format on */
 
 /*
 ** Global variables
@@ -1068,7 +1081,7 @@ void Test_External(void)
     /* Test setting time data from MET (external source, state set) */
     UT_InitData();
     CFE_TIME_Global.ClockSource              = CFE_TIME_SourceSelect_EXTERNAL;
-    CFE_TIME_Global.ClockSetState            = CFE_TIME_SetState_WAS_SET;
+    CFE_TIME_Global.ClockSetState            = CFE_TIME_SetState_NOT_SET;
     settime.Seconds                          = 10;
     settime.Subseconds                       = 0;
     CFE_TIME_Global.ExternalCount            = 0;
@@ -1166,7 +1179,7 @@ void Test_External(void)
     /* Test setting time data from GPS (external source, state set) */
     UT_InitData();
     CFE_TIME_Global.ClockSource              = CFE_TIME_SourceSelect_EXTERNAL;
-    CFE_TIME_Global.ClockSetState            = CFE_TIME_SetState_WAS_SET;
+    CFE_TIME_Global.ClockSetState            = CFE_TIME_SetState_NOT_SET;
     settime.Seconds                          = 10;
     settime.Subseconds                       = 0;
     CFE_TIME_Global.ExternalCount            = 0;
@@ -1266,7 +1279,7 @@ void Test_External(void)
     /* Test setting time data from Time (external source, state set) */
     UT_InitData();
     CFE_TIME_Global.ClockSource                              = CFE_TIME_SourceSelect_EXTERNAL;
-    CFE_TIME_Global.ReferenceState[0].ClockSetState          = CFE_TIME_SetState_WAS_SET;
+    CFE_TIME_Global.ReferenceState[0].ClockSetState          = CFE_TIME_SetState_NOT_SET;
     settime.Seconds                                          = 10;
     settime.Subseconds                                       = 0;
     CFE_TIME_Global.ExternalCount                            = 0;
@@ -1278,6 +1291,7 @@ void Test_External(void)
     CFE_TIME_Global.ReferenceState[0].AtToneDelay.Subseconds = 0;
     CFE_TIME_Global.ReferenceState[0].AtToneLatch.Seconds    = 0;
     CFE_TIME_Global.ReferenceState[0].AtToneLatch.Subseconds = 0;
+    CFE_TIME_Global.ReferenceState[0].AtToneLeapSeconds      = 0;
     CFE_TIME_Global.MaxDelta.Seconds                         = 0;
     CFE_TIME_Global.MaxDelta.Subseconds                      = 1;
     CFE_TIME_Global.MaxLocalClock.Seconds                    = 0;
@@ -1311,28 +1325,28 @@ void Test_PipeCmds(void)
 {
     union
     {
-        CFE_MSG_Message_t              message;
-        CFE_TIME_ToneDataCmd_t         tonedatacmd;
-        CFE_TIME_ToneSignalCmd_t       tonesignalcmd;
-        CFE_TIME_FakeToneCmd_t         timesendcmd;
-        CFE_TIME_SendHkCmd_t           sendhkcmd;
-        CFE_TIME_1HzCmd_t              onehzcmd;
-        CFE_TIME_NoopCmd_t             noopcmd;
-        CFE_TIME_ResetCountersCmd_t    resetcounterscmd;
-        CFE_TIME_SendDiagnosticCmd_t   diagtlmcmd;
-        CFE_TIME_SetStateCmd_t         statecmd;
-        CFE_TIME_SetSourceCmd_t        sourcecmd;
-        CFE_TIME_SetSignalCmd_t        signalcmd;
-        CFE_TIME_AddDelayCmd_t         adddelaycmd;
-        CFE_TIME_SubDelayCmd_t         subdelaycmd;
-        CFE_TIME_SetTimeCmd_t          settimecmd;
-        CFE_TIME_SetMETCmd_t           setmetcmd;
-        CFE_TIME_SetSTCFCmd_t          setstcfcmd;
-        CFE_TIME_SetLeapSecondsCmd_t   leapscmd;
-        CFE_TIME_AddAdjustCmd_t        addadjcmd;
-        CFE_TIME_SubAdjustCmd_t        subadjcmd;
-        CFE_TIME_Add1HZAdjustmentCmd_t add1hzadjcmd;
-        CFE_TIME_Sub1HZAdjustmentCmd_t sub1hzadjcmd;
+        CFE_MSG_Message_t                message;
+        CFE_TIME_ToneDataCmd_t           tonedatacmd;
+        CFE_TIME_ToneSignalCmd_t         tonesignalcmd;
+        CFE_TIME_FakeToneCmd_t           timesendcmd;
+        CFE_TIME_SendHkCmd_t             sendhkcmd;
+        CFE_TIME_OneHzCmd_t              onehzcmd;
+        CFE_TIME_NoopCmd_t               noopcmd;
+        CFE_TIME_ResetCountersCmd_t      resetcounterscmd;
+        CFE_TIME_SendDiagnosticCmd_t     diagtlmcmd;
+        CFE_TIME_SetStateCmd_t           statecmd;
+        CFE_TIME_SetSourceCmd_t          sourcecmd;
+        CFE_TIME_SetSignalCmd_t          signalcmd;
+        CFE_TIME_AddDelayCmd_t           adddelaycmd;
+        CFE_TIME_SubDelayCmd_t           subdelaycmd;
+        CFE_TIME_SetTimeCmd_t            settimecmd;
+        CFE_TIME_SetMETCmd_t             setmetcmd;
+        CFE_TIME_SetSTCFCmd_t            setstcfcmd;
+        CFE_TIME_SetLeapSecondsCmd_t     leapscmd;
+        CFE_TIME_AddAdjustCmd_t          addadjcmd;
+        CFE_TIME_SubAdjustCmd_t          subadjcmd;
+        CFE_TIME_AddOneHzAdjustmentCmd_t add1hzadjcmd;
+        CFE_TIME_SubOneHzAdjustmentCmd_t sub1hzadjcmd;
     } CmdBuf;
 
     UT_SoftwareBusSnapshot_Entry_t LocalSnapshotData = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_TIME_HK_TLM_MID)};
@@ -1798,14 +1812,14 @@ void Test_PipeCmds(void)
     CFE_TIME_Global.CommandCounter      = 0;
     CFE_TIME_Global.CommandErrorCounter = 0;
     UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, sizeof(CmdBuf.add1hzadjcmd),
-                    UT_TPID_CFE_TIME_CMD_ADD_1HZ_ADJUSTMENT_CC);
+                    UT_TPID_CFE_TIME_CMD_ADD_ONEHZ_ADJUSTMENT_CC);
 
 #if (CFE_PLATFORM_TIME_CFG_SERVER == true)
-    CFE_UtAssert_EVENTSENT(CFE_TIME_1HZ_EID);
+    CFE_UtAssert_EVENTSENT(CFE_TIME_ONEHZ_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 1);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 0);
 #else
-    CFE_UtAssert_EVENTSENT(CFE_TIME_1HZ_CFG_EID);
+    CFE_UtAssert_EVENTSENT(CFE_TIME_ONEHZ_CFG_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 0);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 1);
 #endif
@@ -1815,7 +1829,7 @@ void Test_PipeCmds(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CFE_TIME_Global.CommandCounter      = 0;
     CFE_TIME_Global.CommandErrorCounter = 0;
-    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, 0, UT_TPID_CFE_TIME_CMD_ADD_1HZ_ADJUSTMENT_CC);
+    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, 0, UT_TPID_CFE_TIME_CMD_ADD_ONEHZ_ADJUSTMENT_CC);
     CFE_UtAssert_EVENTSENT(CFE_TIME_LEN_ERR_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 0);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 1);
@@ -1826,14 +1840,14 @@ void Test_PipeCmds(void)
     CFE_TIME_Global.CommandCounter      = 0;
     CFE_TIME_Global.CommandErrorCounter = 0;
     UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, sizeof(CmdBuf.sub1hzadjcmd),
-                    UT_TPID_CFE_TIME_CMD_SUB_1HZ_ADJUSTMENT_CC);
+                    UT_TPID_CFE_TIME_CMD_SUB_ONEHZ_ADJUSTMENT_CC);
 
 #if (CFE_PLATFORM_TIME_CFG_SERVER == true)
-    CFE_UtAssert_EVENTSENT(CFE_TIME_1HZ_EID);
+    CFE_UtAssert_EVENTSENT(CFE_TIME_ONEHZ_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 1);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 0);
 #else
-    CFE_UtAssert_EVENTSENT(CFE_TIME_1HZ_CFG_EID);
+    CFE_UtAssert_EVENTSENT(CFE_TIME_ONEHZ_CFG_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 0);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 1);
 #endif
@@ -1843,7 +1857,7 @@ void Test_PipeCmds(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CFE_TIME_Global.CommandCounter      = 0;
     CFE_TIME_Global.CommandErrorCounter = 0;
-    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, 0, UT_TPID_CFE_TIME_CMD_SUB_1HZ_ADJUSTMENT_CC);
+    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, 0, UT_TPID_CFE_TIME_CMD_SUB_ONEHZ_ADJUSTMENT_CC);
     CFE_UtAssert_EVENTSENT(CFE_TIME_LEN_ERR_EID);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandCounter, 0);
     UtAssert_UINT32_EQ(CFE_TIME_Global.CommandErrorCounter, 1);
@@ -1928,7 +1942,7 @@ void Test_PipeCmds(void)
     /* In the 1Hz state machine it should call PSP GetTime as part,
         of latching the clock.  This is tested only to see that the latch executed. */
     UT_InitData();
-    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, sizeof(CmdBuf.onehzcmd), UT_TPID_CFE_TIME_1HZ_CMD);
+    UT_CallTaskPipe(CFE_TIME_TaskPipe, &CmdBuf.message, sizeof(CmdBuf.onehzcmd), UT_TPID_CFE_TIME_ONEHZ_CMD);
     UtAssert_NONZERO(UT_GetStubCount(UT_KEY(CFE_PSP_GetTime)));
 }
 

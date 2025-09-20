@@ -1,5 +1,51 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev54
+- 'Fix #237, update sample app to reflect 582 standard'
+- See: <https://github.com/nasa/sample_app/pull/238>
+
+
+## Development Build: equuleus-rc1+dev50
+- Address sanitizer issue
+- See <https://github.com/nasa/sample_app/pull/235>
+
+## Development Build: equuleus-rc1+dev46
+- Convert remaining int32 CFE status variables to CFE_Status_t
+- Convert syslog writes during initialization to events
+- See <https://github.com/nasa/sample_app/pull/218> and <https://github.com/nasa/sample_app/pull/216>
+
+## Development Build: equuleus-rc4+dev40
+- apply name changes to EDS dispatcher
+- See <https://github.com/nasa/sample_app/pull/229>
+
+## Development Build: equuleus-rc1+dev36
+- updating sample_app to use new versioning system
+- See <https://github.com/nasa/sample_app/pull/226>
+
+## Development Build: v1.3.0-rc4+dev69
+- define msgids via topicids
+- See <https://github.com/nasa/sample_app/pull/220>
+
+## Development Build: v1.3.0-rc4+dev65
+- bring sample_app fully into compliance
+- Rename CommandCode variable to FcnCode
+- Add check for success of CFE_TBL_Load() during Initialization
+- See <https://github.com/nasa/sample_app/pull/212>, <https://github.com/nasa/sample_app/pull/187>, and <https://github.com/nasa/sample_app/pull/190>
+
+## Development Build: v1.3.0-rc4+dev56
+- Apply consistent Event ID names to common events
+- Remove component-specific cFE header #includes
+- Refactor SAMPLE_APP_Init/Process to remove multiple returns
+- Add test for missing branch in SAMPLE_APP_Process()
+- Zero out global data structure during initialization
+- Move cmds and utils into separate files
+- organize source files according to current patterns
+- See <https://github.com/nasa/sample_app/pull/189>, <https://github.com/nasa/sample_app/pull/195>, <https://github.com/nasa/sample_app/pull/198>, <https://github.com/nasa/sample_app/pull/200>, <https://github.com/nasa/sample_app/pull/201>, <https://github.com/nasa/sample_app/pull/205>, and <https://github.com/nasa/sample_app/pull/208>
+
+## Development Build: v1.3.0-rc4+dev39
+- update cmake recipe
+- See <https://github.com/nasa/sample_app/pull/203>
+
 ## Development Build: v1.3.0-rc4+dev35
 - Remove redundant comments
 - Create CHANGELOG.md

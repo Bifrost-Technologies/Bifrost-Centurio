@@ -13,6 +13,8 @@ set(es_SOURCES
     fsw/src/cfe_es_backgroundtask.c
     fsw/src/cfe_es_cds.c
     fsw/src/cfe_es_cds_mempool.c
+    fsw/src/cfe_es_crc.c
+    fsw/src/cfe_es_dispatch.c
     fsw/src/cfe_es_erlog.c
     fsw/src/cfe_es_generic_pool.c
     fsw/src/cfe_es_mempool.c
@@ -34,6 +36,16 @@ if (ENABLE_UNIT_TESTS)
 endif (ENABLE_UNIT_TESTS)
 
 cfs_app_check_intf(${DEP}
+    cfe_es_eventids.h
+    cfe_es_extern_typedefs.h
+    cfe_es_fcncodes.h
+    cfe_es_interface_cfg.h
+    cfe_es_internal_cfg.h
+    cfe_es_mission_cfg.h
+    cfe_es_msgdefs.h
     cfe_es_msg.h
-    cfe_es_events.h
-)
+    cfe_es_msgids.h
+    cfe_es_msgstruct.h
+    cfe_es_platform_cfg.h
+    cfe_es_topicids.h
+  )

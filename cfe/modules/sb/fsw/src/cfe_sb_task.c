@@ -30,6 +30,7 @@
 
 #include "cfe_sb_module_all.h"
 #include "cfe_version.h"
+#include "cfe_config.h" /* For version string construction */
 #include "cfe_es_msg.h" /* needed for local use of CFE_ES_RestartCmd_t */
 #include "cfe_sb_verify.h"
 
@@ -43,7 +44,7 @@ typedef struct
 {
     const char *Filename;   /* File name for error reporting */
     osal_id_t   Fd;         /* File id for writing */
-    uint32      FileSize;   /* File size for reporting */
+    size_t      FileSize;   /* File size for reporting */
     uint32      EntryCount; /* Entry count for reporting */
     int32       Status;     /* File write status */
 } CFE_SB_FileWriteCallback_t;
@@ -119,6 +120,7 @@ int32 CFE_SB_AppInit(void)
     uint32              CfgFileEventsToFilter = 0;
     CFE_ES_MemPoolBuf_t TmpPtr;
     int32               Status;
+    char                VersionString[CFE_CFG_MAX_VERSION_STR_LEN];
 
     /* Get the assigned Application ID for the SB Task */
     CFE_ES_GetAppID(&CFE_SB_Global.AppId);
@@ -266,8 +268,10 @@ int32 CFE_SB_AppInit(void)
         return Status;
     }
 
+    CFE_Config_GetVersionString(VersionString, CFE_CFG_MAX_VERSION_STR_LEN, "cFE",
+        CFE_SRC_VERSION, CFE_BUILD_CODENAME, CFE_LAST_OFFICIAL);
     Status =
-        CFE_EVS_SendEvent(CFE_SB_INIT_EID, CFE_EVS_EventType_INFORMATION, "cFE SB Initialized: %s", CFE_VERSION_STRING);
+        CFE_EVS_SendEvent(CFE_SB_INIT_EID, CFE_EVS_EventType_INFORMATION, "cFE SB Initialized: %s", VersionString);
     if (Status != CFE_SUCCESS)
     {
         CFE_ES_WriteToSysLog("%s: Error sending init event:RC=0x%08X\n", __func__, (unsigned int)Status);
@@ -279,180 +283,16 @@ int32 CFE_SB_AppInit(void)
 
 /*----------------------------------------------------------------
  *
- * Internal helper routine only, not part of API.
- *
- * Verifies the length of incoming SB command packets, returns true if acceptable
- *
- *-----------------------------------------------------------------*/
-bool CFE_SB_VerifyCmdLength(CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
-{
-    bool              result       = true;
-    CFE_MSG_Size_t    ActualLength = 0;
-    CFE_MSG_FcnCode_t FcnCode      = 0;
-    CFE_SB_MsgId_t    MsgId        = CFE_SB_INVALID_MSG_ID;
-
-    CFE_MSG_GetSize(MsgPtr, &ActualLength);
-
-    /*
-    ** Verify the command packet length
-    */
-    if (ExpectedLength != ActualLength)
-    {
-        CFE_MSG_GetMsgId(MsgPtr, &MsgId);
-        CFE_MSG_GetFcnCode(MsgPtr, &FcnCode);
-
-        CFE_EVS_SendEvent(CFE_SB_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
-                          "Invalid msg length: ID = 0x%X,  CC = %u, Len = %u, Expected = %u",
-                          (unsigned int)CFE_SB_MsgIdToValue(MsgId), (unsigned int)FcnCode, (unsigned int)ActualLength,
-                          (unsigned int)ExpectedLength);
-        result = false;
-        ++CFE_SB_Global.HKTlmMsg.Payload.CommandErrorCounter;
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------
- *
- * Application-scope internal function
- * See description in header file for argument/return detail
- *
- *-----------------------------------------------------------------*/
-void CFE_SB_ProcessCmdPipePkt(CFE_SB_Buffer_t *SBBufPtr)
-{
-    CFE_SB_MsgId_t    MessageID = CFE_SB_INVALID_MSG_ID;
-    CFE_MSG_FcnCode_t FcnCode   = 0;
-
-    CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MessageID);
-
-    switch (CFE_SB_MsgIdToValue(MessageID))
-    {
-        case CFE_SB_SEND_HK_MID:
-            /* Note: Command counter not incremented for this command */
-            CFE_SB_SendHKTlmCmd((CFE_MSG_CommandHeader_t *)SBBufPtr);
-            break;
-
-        case CFE_SB_SUB_RPT_CTRL_MID:
-            /* Note: Command counter not incremented for this command */
-            CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &FcnCode);
-            switch (FcnCode)
-            {
-                case CFE_SB_SEND_PREV_SUBS_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_SendPrevSubsCmd_t)))
-                    {
-                        CFE_SB_SendPrevSubsCmd((CFE_SB_SendPrevSubsCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_ENABLE_SUB_REPORTING_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_EnableSubReportingCmd_t)))
-                    {
-                        CFE_SB_EnableSubReportingCmd((CFE_SB_EnableSubReportingCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_DISABLE_SUB_REPORTING_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_DisableSubReportingCmd_t)))
-                    {
-                        CFE_SB_DisableSubReportingCmd((CFE_SB_DisableSubReportingCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                default:
-                    CFE_EVS_SendEvent(CFE_SB_BAD_CMD_CODE_EID, CFE_EVS_EventType_ERROR,
-                                      "Invalid Cmd, Unexpected Command Code %u", (unsigned int)FcnCode);
-                    CFE_SB_Global.HKTlmMsg.Payload.CommandErrorCounter++;
-                    break;
-            } /* end switch on cmd code */
-            break;
-
-        case CFE_SB_CMD_MID:
-            CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &FcnCode);
-            switch (FcnCode)
-            {
-                case CFE_SB_NOOP_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_NoopCmd_t)))
-                    {
-                        CFE_SB_NoopCmd((CFE_SB_NoopCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_RESET_COUNTERS_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_ResetCountersCmd_t)))
-                    {
-                        /* Note: Command counter not incremented for this command */
-                        CFE_SB_ResetCountersCmd((CFE_SB_ResetCountersCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_SEND_SB_STATS_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_SendSbStatsCmd_t)))
-                    {
-                        CFE_SB_SendStatsCmd((CFE_SB_SendSbStatsCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_WRITE_ROUTING_INFO_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_WriteRoutingInfoCmd_t)))
-                    {
-                        CFE_SB_WriteRoutingInfoCmd((CFE_SB_WriteRoutingInfoCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_ENABLE_ROUTE_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_EnableRouteCmd_t)))
-                    {
-                        CFE_SB_EnableRouteCmd((CFE_SB_EnableRouteCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_DISABLE_ROUTE_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_DisableRouteCmd_t)))
-                    {
-                        CFE_SB_DisableRouteCmd((CFE_SB_DisableRouteCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_WRITE_PIPE_INFO_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_WritePipeInfoCmd_t)))
-                    {
-                        CFE_SB_WritePipeInfoCmd((CFE_SB_WritePipeInfoCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                case CFE_SB_WRITE_MAP_INFO_CC:
-                    if (CFE_SB_VerifyCmdLength(&SBBufPtr->Msg, sizeof(CFE_SB_WriteMapInfoCmd_t)))
-                    {
-                        CFE_SB_WriteMapInfoCmd((CFE_SB_WriteMapInfoCmd_t *)SBBufPtr);
-                    }
-                    break;
-
-                default:
-                    CFE_EVS_SendEvent(CFE_SB_BAD_CMD_CODE_EID, CFE_EVS_EventType_ERROR,
-                                      "Invalid Cmd, Unexpected Command Code %u", FcnCode);
-                    CFE_SB_Global.HKTlmMsg.Payload.CommandErrorCounter++;
-                    break;
-            } /* end switch on cmd code */
-            break;
-
-        default:
-            CFE_EVS_SendEvent(CFE_SB_BAD_MSGID_EID, CFE_EVS_EventType_ERROR, "Invalid Cmd, Unexpected Msg Id: 0x%x",
-                              (unsigned int)CFE_SB_MsgIdToValue(MessageID));
-            CFE_SB_Global.HKTlmMsg.Payload.CommandErrorCounter++;
-            break;
-
-    } /* end switch on MsgId */
-}
-
-/*----------------------------------------------------------------
- *
  * Application-scope internal function
  * See description in header file for argument/return detail
  *
  *-----------------------------------------------------------------*/
 int32 CFE_SB_NoopCmd(const CFE_SB_NoopCmd_t *data)
 {
-    CFE_EVS_SendEvent(CFE_SB_CMD0_RCVD_EID, CFE_EVS_EventType_INFORMATION, "No-op Cmd Rcvd: %s", CFE_VERSION_STRING);
+    char VersionString[CFE_CFG_MAX_VERSION_STR_LEN];
+    CFE_Config_GetVersionString(VersionString, CFE_CFG_MAX_VERSION_STR_LEN, "cFE",
+        CFE_SRC_VERSION, CFE_BUILD_CODENAME, CFE_LAST_OFFICIAL);
+    CFE_EVS_SendEvent(CFE_SB_CMD0_RCVD_EID, CFE_EVS_EventType_INFORMATION, "No-op Cmd Rcvd: %s", VersionString);
     CFE_SB_Global.HKTlmMsg.Payload.CommandCounter++;
 
     return CFE_SUCCESS;

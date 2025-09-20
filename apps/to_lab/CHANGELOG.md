@@ -1,5 +1,61 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev62
+- Rename CommandCode variable to Fcncode
+- Light initialization logic refactor + remove multiple returns
+- See <https://github.com/nasa/to_lab/pull/171> and <https://github.com/nasa/to_lab/pull/180>
+
+## Development Build: equuleus-rc1+dev56
+- Add CFE_EVS_SHORT_EVENT_MSG_MID to to_lab_sub.c
+- See <https://github.com/nasa/to_lab/pull/198>
+
+## Development Build: equuleus-rc1+dev52
+- Zero-out global data during init + set RunStatus to APP_ERROR if init fails
+- See <https://github.com/nasa/to_lab/pull/188>
+
+## Development Build: equuleus-rc1+dev48
+- apply name changes to EDS dispatcher
+- See <https://github.com/nasa/to_lab/pull/194>
+
+## Development Build: equuleus-rc1+dev44
+- Add an event for ResetCountersCmd
+- Add version information to NOOP event
+- See <https://github.com/nasa/to_lab/pull/191> and <https://github.com/nasa/to_lab/pull/136>
+
+## Development Build: equuleus-rc1+dev38
+- updating to_lab to use new versioning system
+- See <https://github.com/nasa/to_lab/pull/186>
+
+## Development Build: v2.5.0-rc4+dev75
+- define msgids via topicids
+- See <https://github.com/nasa/to_lab/pull/176>
+
+## Development Build: v2.5.0-rc4+dev71
+- Add timeout and packet limit on sending telemetry
+- See <https://github.com/nasa/to_lab/pull/173>
+
+## Development Build: v2.5.0-rc4+dev66
+- reorganize source files
+- Apply consistent Event ID names to common events
+- Refactor mutually exclusive logic in if, else if block
+- Add check for failure of CFE_EVS_Register() during initialization
+- Convert int32 return codes and variables to CFE_Status_t
+- Move function prototypes to header file
+- Update misnamed CmdHeader variable in to_lab_msg.h
+- See <https://github.com/nasa/to_lab/pull/168>, <https://github.com/nasa/to_lab/pull/134>, <https://github.com/nasa/to_lab/pull/146>, <https://github.com/nasa/to_lab/pull/148>, <https://github.com/nasa/to_lab/pull/156>, <https://github.com/nasa/to_lab/pull/158>, and <https://github.com/nasa/to_lab/pull/163>
+
+## Development Build: v2.5.0-rc4+dev49
+- Remove unused/unnecessary TO_LAB_UNUSED
+- See <https://github.com/nasa/to_lab/pull/160>
+
+## Development Build: v2.5.0-rc4+dev45
+- adjust subscription table based on apps present
+- See <https://github.com/nasa/to_lab/pull/153>
+
+## Development Build: v2.5.0-rc4+dev41
+- update cmake recipe
+- See <https://github.com/nasa/to_lab/pull/150>
+
 ## Development Build: v2.5.0-rc4+dev35
 - Adds format changes in to_lab_app.c
 - See <https://github.com/nasa/to_lab/pull/142>

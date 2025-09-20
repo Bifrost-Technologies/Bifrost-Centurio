@@ -182,7 +182,7 @@ int32 OS_close(osal_id_t filedes)
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_TimedRead(osal_id_t filedes, void *buffer, size_t nbytes, int32 timeout)
+int32 OS_TimedReadAbs(osal_id_t filedes, void *buffer, size_t nbytes, OS_time_t abstime)
 {
     OS_object_token_t token;
     int32             return_code;
@@ -194,8 +194,44 @@ int32 OS_TimedRead(osal_id_t filedes, void *buffer, size_t nbytes, int32 timeout
     return_code = OS_ObjectIdGetById(OS_LOCK_MODE_REFCOUNT, LOCAL_OBJID_TYPE, filedes, &token);
     if (return_code == OS_SUCCESS)
     {
-        return_code = OS_GenericRead_Impl(&token, buffer, nbytes, timeout);
+        return_code = OS_GenericRead_Impl(&token, buffer, nbytes, abstime);
 
+        OS_ObjectIdRelease(&token);
+    }
+
+    return return_code;
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_TimedRead(osal_id_t filedes, void *buffer, size_t nbytes, int32 timeout)
+{
+    return OS_TimedReadAbs(filedes, buffer, nbytes, OS_TimeFromRelativeMilliseconds(timeout));
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_TimedWriteAbs(osal_id_t filedes, const void *buffer, size_t nbytes, OS_time_t abstime)
+{
+    OS_object_token_t token;
+    int32             return_code;
+
+    /* Check Parameters */
+    OS_CHECK_POINTER(buffer);
+    OS_CHECK_SIZE(nbytes);
+
+    return_code = OS_ObjectIdGetById(OS_LOCK_MODE_REFCOUNT, LOCAL_OBJID_TYPE, filedes, &token);
+    if (return_code == OS_SUCCESS)
+    {
+        return_code = OS_GenericWrite_Impl(&token, buffer, nbytes, abstime);
         OS_ObjectIdRelease(&token);
     }
 
@@ -210,21 +246,7 @@ int32 OS_TimedRead(osal_id_t filedes, void *buffer, size_t nbytes, int32 timeout
  *-----------------------------------------------------------------*/
 int32 OS_TimedWrite(osal_id_t filedes, const void *buffer, size_t nbytes, int32 timeout)
 {
-    OS_object_token_t token;
-    int32             return_code;
-
-    /* Check Parameters */
-    OS_CHECK_POINTER(buffer);
-    OS_CHECK_SIZE(nbytes);
-
-    return_code = OS_ObjectIdGetById(OS_LOCK_MODE_REFCOUNT, LOCAL_OBJID_TYPE, filedes, &token);
-    if (return_code == OS_SUCCESS)
-    {
-        return_code = OS_GenericWrite_Impl(&token, buffer, nbytes, timeout);
-        OS_ObjectIdRelease(&token);
-    }
-
-    return return_code;
+    return OS_TimedWriteAbs(filedes, buffer, nbytes, OS_TimeFromRelativeMilliseconds(timeout));
 }
 
 /*----------------------------------------------------------------
@@ -342,7 +364,7 @@ int32 OS_remove(const char *path)
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_rename(const char *old, const char *new)
+int32 OS_rename(const char *old_filename, const char *new_filename)
 {
     OS_object_iter_t             iter;
     OS_stream_internal_record_t *stream;
@@ -350,10 +372,10 @@ int32 OS_rename(const char *old, const char *new)
     char                         old_path[OS_MAX_LOCAL_PATH_LEN];
     char                         new_path[OS_MAX_LOCAL_PATH_LEN];
 
-    return_code = OS_TranslatePath(old, old_path);
+    return_code = OS_TranslatePath(old_filename, old_path);
     if (return_code == OS_SUCCESS)
     {
-        return_code = OS_TranslatePath(new, new_path);
+        return_code = OS_TranslatePath(new_filename, new_path);
     }
 
     if (return_code == OS_SUCCESS)
@@ -369,9 +391,9 @@ int32 OS_rename(const char *old, const char *new)
         {
             stream = OS_OBJECT_TABLE_GET(OS_stream_table, iter.token);
 
-            if (stream->socket_domain == OS_SocketDomain_INVALID && strcmp(stream->stream_name, old) == 0)
+            if (stream->socket_domain == OS_SocketDomain_INVALID && strcmp(stream->stream_name, old_filename) == 0)
             {
-                strncpy(stream->stream_name, new, sizeof(stream->stream_name) - 1);
+                strncpy(stream->stream_name, new_filename, sizeof(stream->stream_name) - 1);
                 stream->stream_name[sizeof(stream->stream_name) - 1] = 0;
             }
         }

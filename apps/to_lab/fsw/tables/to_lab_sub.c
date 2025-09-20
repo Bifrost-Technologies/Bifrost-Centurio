@@ -22,44 +22,49 @@
  */
 
 #include "cfe_tbl_filedef.h" /* Required to obtain the CFE_TBL_FILEDEF macro definition */
-
-#include "to_lab_sub_table.h"
-#include "to_lab_app.h"
+#include "cfe_sb_api_typedefs.h"
+#include "to_lab_tbl.h"
+#include "cfe_msgids.h"
 
 /*
 ** Add the proper include file for the message IDs below
 */
-
-/*
-** Common CFS app includes below are commented out
-*/
 #include "to_lab_msgids.h"
+
+#ifdef HAVE_CI_LAB
 #include "ci_lab_msgids.h"
+#endif
 
+#ifdef HAVE_SAMPLE_APP
 #include "sample_app_msgids.h"
+#endif
 
-#if 0
+/* centurio_nav app (mission-specific) */
+#include "centurio_nav_msgids.h"
+
+#ifdef HAVE_HS
 #include "hs_msgids.h"
+#endif
+
+#ifdef HAVE_FM
 #include "fm_msgids.h"
+#endif
+
+#ifdef HAVE_SC
 #include "sc_msgids.h"
+#endif
+
+#ifdef HAVE_DS
 #include "ds_msgids.h"
+#endif
+
+#ifdef HAVE_LC
 #include "lc_msgids.h"
 #endif
 
 TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
                                       {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_HK_TLM_MID), {0, 0}, 4},
                                       {CFE_SB_MSGID_WRAP_VALUE(TO_LAB_DATA_TYPES_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_HK_TLM_MID), {0, 0}, 4},
-                                      {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
-
-#if 0
-        /* Add these if needed */
-        {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0,0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(FM_HK_TLM_MID), {0,0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(SC_HK_TLM_MID), {0,0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(DS_HK_TLM_MID), {0,0}, 4},
-        {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0,0}, 4},
-#endif
 
                                       /* cFE Core subscriptions */
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_HK_TLM_MID), {0, 0}, 4},
@@ -71,11 +76,35 @@ TO_LAB_Subs_t TO_LAB_Subs = {.Subs = {/* CFS App Subscriptions */
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_SB_STATS_TLM_MID), {0, 0}, 4},
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_TBL_REG_TLM_MID), {0, 0}, 4},
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_LONG_EVENT_MSG_MID), {0, 0}, 32},
-
+                                      {CFE_SB_MSGID_WRAP_VALUE(CFE_EVS_SHORT_EVENT_MSG_MID), {0, 0}, 32},
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_APP_TLM_MID), {0, 0}, 4},
                                       {CFE_SB_MSGID_WRAP_VALUE(CFE_ES_MEMSTATS_TLM_MID), {0, 0}, 4},
 
-                                      /* TO_LAB_UNUSED entry to mark the end of valid MsgIds */
-                                      {TO_LAB_UNUSED, {0, 0}, 0}}};
+#ifdef HAVE_CI_LAB
+                                      {CFE_SB_MSGID_WRAP_VALUE(CI_LAB_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_SAMPLE_APP
+                                      {CFE_SB_MSGID_WRAP_VALUE(SAMPLE_APP_HK_TLM_MID), {0, 0}, 4},
+#endif
+                                      /* Centurio Nav HK telemetry */
+                                      {CFE_SB_MSGID_WRAP_VALUE(CENTURIO_NAV_HK_TLM_MID), {0, 0}, 4},
+#ifdef HAVE_HS
+                                      {CFE_SB_MSGID_WRAP_VALUE(HS_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_FM
+                                      {CFE_SB_MSGID_WRAP_VALUE(FM_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_SC
+                                      {CFE_SB_MSGID_WRAP_VALUE(SC_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_DS
+                                      {CFE_SB_MSGID_WRAP_VALUE(DS_HK_TLM_MID), {0, 0}, 4},
+#endif
+#ifdef HAVE_LC
+                                      {CFE_SB_MSGID_WRAP_VALUE(LC_HK_TLM_MID), {0, 0}, 4},
+#endif
+
+                                      /* CFE_SB_MSGID_RESERVED entry to mark the end of valid MsgIds */
+                                      {CFE_SB_MSGID_RESERVED, {0, 0}, 0}}};
 
 CFE_TBL_FILEDEF(TO_LAB_Subs, TO_LAB_APP.TO_LAB_Subs, TO Lab Sub Tbl, to_lab_sub.tbl)

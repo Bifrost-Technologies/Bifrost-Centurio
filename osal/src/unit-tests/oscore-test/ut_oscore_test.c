@@ -203,7 +203,6 @@ void UtTest_Setup(void)
     UtTest_Add(UT_os_bin_sem_take_test, NULL, NULL, "OS_BinSemTake");
     UtTest_Add(UT_os_bin_sem_timed_wait_test, NULL, NULL, "OS_BinSemTimedWait");
     UtTest_Add(UT_os_bin_sem_get_id_by_name_test, NULL, NULL, "OS_BinSemGetIdByName");
-    UtTest_Add(UT_os_bin_sem_get_info_test, NULL, NULL, "OS_BinSemGetInfo");
 
     UtTest_Add(UT_os_count_sem_create_test, NULL, NULL, "OS_CountSemCreate");
     UtTest_Add(UT_os_count_sem_delete_test, NULL, NULL, "OS_CountSemDelete");
@@ -211,7 +210,6 @@ void UtTest_Setup(void)
     UtTest_Add(UT_os_count_sem_take_test, NULL, NULL, "OS_CountSemTake");
     UtTest_Add(UT_os_count_sem_timed_wait_test, NULL, NULL, "OS_CountSemTimedWait");
     UtTest_Add(UT_os_count_sem_get_id_by_name_test, NULL, NULL, "OS_CountSemGetIdByName");
-    UtTest_Add(UT_os_count_sem_get_info_test, NULL, NULL, "OS_CountSemGetInfo");
 
     UtTest_Add(UT_os_mut_sem_create_test, NULL, NULL, "OS_MutSemCreate");
     UtTest_Add(UT_os_mut_sem_delete_test, NULL, NULL, "OS_MutSemDelete");
@@ -242,7 +240,7 @@ void UtTest_Setup(void)
     UtTest_Add(UT_os_task_get_id_test, UT_os_init_task_get_id_test, NULL, "OS_TaskGetId");
     UtTest_Add(UT_os_task_get_id_by_name_test, UT_os_init_task_get_id_by_name_test, NULL, "OS_TaskGetIdByName");
     UtTest_Add(UT_os_task_get_info_test, UT_os_init_task_get_info_test, NULL, "OS_TaskGetInfo");
-    UtTest_Add(UT_os_task_getid_by_sysdata_test, UT_os_task_getid_by_sysdata_test, NULL, "OS_TaskFindIdBySystemData");
+    UtTest_Add(UT_os_task_getid_by_sysdata_test, NULL, NULL, "OS_TaskFindIdBySystemData");
 
     UtTest_Add(UT_os_geterrorname_test, NULL, NULL, "OS_GetErrorName");
     UtTest_Add(UT_os_statustostring_test, NULL, NULL, "OS_StatusToString");

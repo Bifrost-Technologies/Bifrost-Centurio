@@ -359,7 +359,7 @@ void Test_CFE_TBL_LoadCmd(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_CFE_TBL_HousekeepingCmd(void);
+void Test_CFE_TBL_SendHkCmd(void);
 
 /*****************************************************************************/
 /**
@@ -679,5 +679,11 @@ void Test_CFE_TBL_Internal(void);
 **
 ******************************************************************************/
 int32 Test_CFE_TBL_ValidationFunc(void *TblPtr);
+
+/* Test cases for resource ID access patterns based on shared resource types */
+void Test_CFE_TBL_ResourceID_ValidationResult(void);
+void Test_CFE_TBL_ResourceID_RegistryRecord(void);
+void Test_CFE_TBL_ResourceID_AccessDescriptor(void);
+void Test_CFE_TBL_ResourceID_DumpControl(void);
 
 #endif /* TBL_UT_H */

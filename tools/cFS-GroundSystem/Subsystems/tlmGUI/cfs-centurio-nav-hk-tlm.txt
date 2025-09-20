@@ -1,0 +1,16 @@
+# Field Name            Offset  Size  Type  Format  Units  Min  Max  Bitfield
+Command Counter,            12,     1,   B,   Dec,   NULL,  NULL, NULL, NULL
+Command Error Counter,      13,     1,   B,   Dec,   NULL,  NULL, NULL, NULL
+System Status,              14,     1,   B,   Dec,   NULL,  0,    255,  NULL
+Nav Fix Type,               15,     1,   B,   Dec,   NULL,  0,    5,    NULL
+Latitude (deg),             16,     8,   d,   Dec,   NULL,  NULL, NULL, NULL
+Longitude (deg),            24,     8,   d,   Dec,   NULL,  NULL, NULL, NULL
+Altitude (m),               32,     4,   f,   Dec,   NULL,  NULL, NULL, NULL
+Vel North (m/s),            36,     4,   f,   Dec,   NULL,  NULL, NULL, NULL
+Vel East (m/s),             40,     4,   f,   Dec,   NULL,  NULL, NULL, NULL
+Vel Down (m/s),             44,     4,   f,   Dec,   NULL,  NULL, NULL, NULL
+Yaw (deg),                  48,     4,   f,   Dec,   NULL,  -180, 180,  NULL
+Pitch (deg),                52,     4,   f,   Dec,   NULL,  -90,  90,   NULL
+Roll (deg),                 56,     4,   f,   Dec,   NULL,  -180, 180,  NULL
+Throttle (%),               60,     4,   f,   Dec,   NULL,  0,    100,  NULL
+# Spare2 (alignment),       64,     2,   H,   Hex,   NULL,  NULL, NULL, NULL

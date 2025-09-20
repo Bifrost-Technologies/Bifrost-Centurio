@@ -1,5 +1,23 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev18
+- Fix misleading wording in Commands-Telemetry.md
+- See <https://github.com/nasa/cFS-GroundSystem/pull/249>
+
+## Development Build: equuleus-rc1+dev14
+- Update LogOverflowCounter Description
+- Update incorrect variable descriptions in tlm.txt
+- Add missing description fields to cfe-es-hk-tlm.txt
+- See <https://github.com/nasa/cFS-GroundSystem/pull/233>, <https://github.com/nasa/cFS-GroundSystem/pull/235>, and <https://github.com/nasa/cFS-GroundSystem/pull/236>
+
+## Development Build: equuleus-rc1+dev6
+- making version string PEP 440-compliant
+- See <https://github.com/nasa/cFS-GroundSystem/pull/245>
+
+## Development Build: equuleus-rc1+dev2
+- updating cFS_GroundSystem to use new versioning system
+- See <https://github.com/nasa/cFS-GroundSystem/pull/239>
+
 ## Development Build: v3.0.0-rc4+dev43
 - Add input so users can specify the parameter description
 - See <https://github.com/nasa/cFS-GroundSystem/pull/206>

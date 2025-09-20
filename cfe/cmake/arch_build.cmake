@@ -101,10 +101,45 @@ function(add_cfe_app APP_NAME APP_SRC_FILES)
   add_library(${APP_NAME} ${APPTYPE} ${APP_SRC_FILES} ${ARGN})
   target_link_libraries(${APP_NAME} core_api)
 
+  # If using "local" EDS linkage, then link the app with the EDS library here.
+  # Note that the linker will only pull in the compilation unit that actually
+  # resolves an undefined symbol, which in this case would be the app-specific
+  # DATATYPE_DB object if one is referenced at all.
+  #
+  # By linking with the respective application like this, the net result is that
+  # only the _referenced_ EDS DBs (i.e. those for loaded apps) are held in memory.
+  if (CFE_EDS_ENABLED_BUILD AND CFE_EDS_LINK_MODE STREQUAL LOCAL)
+    target_link_libraries($(APP_NAME) cfe_edsdb_static)
+  endif()
+
   # An "install" step is only needed for dynamic/runtime loaded apps
   if (APP_DYNAMIC_TARGET_LIST)
     cfs_app_do_install(${APP_NAME} ${APP_DYNAMIC_TARGET_LIST})
   endif (APP_DYNAMIC_TARGET_LIST)
+
+  # Add an interface target is added with a ".table" suffix,
+  # this should reflect all the INCLUDE_DIRECTORIES and COMPILE_DEFINITIONS that
+  # were used when compiling the app itself, such that tables (and other items) can be
+  # added later and reference the same set.
+  add_library(${APP_NAME}.table INTERFACE)
+  get_directory_property(CURRENT_INCLUDE_DIRS INCLUDE_DIRECTORIES)
+  if (NOT CURRENT_INCLUDE_DIRS)
+    set(CURRENT_INCLUDE_DIRS) # make it empty, not -NOTFOUND
+  endif()
+  get_directory_property(CURRENT_COMPILE_DEFS COMPILE_DEFINITIONS)
+  if (NOT CURRENT_COMPILE_DEFS)
+    set(CURRENT_COMPILE_DEFS) # make it empty, not -NOTFOUND
+  endif()
+  list (APPEND CURRENT_INCLUDE_DIRS
+    $<TARGET_PROPERTY:${APP_NAME},INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:core_api,INTERFACE_INCLUDE_DIRECTORIES>
+  )
+  list (APPEND CURRENT_COMPILE_DEFS
+    $<TARGET_PROPERTY:${APP_NAME},COMPILE_DEFINITIONS>
+    $<TARGET_PROPERTY:core_api,INTERFACE_COMPILE_DEFINITIONS>
+  )
+  target_include_directories(${APP_NAME}.table INTERFACE ${CURRENT_INCLUDE_DIRS})
+  target_compile_definitions(${APP_NAME}.table INTERFACE ${CURRENT_COMPILE_DEFS} CFE_APP_NAME="${APP_NAME}")
 
 endfunction(add_cfe_app)
 
@@ -146,101 +181,87 @@ endfunction(add_cfe_app_dependency)
 #
 # Simplified routine to add CFS tables to be built with an app
 #
-function(add_cfe_tables APP_NAME TBL_SRC_FILES)
+# For apps with just a single table, the TABLE_FQNAME may be the
+# same as the app name, which is simple.
+#
+# For apps with multiple tables, the TABLE_FQNAME may be of the
+# form "${APP_NAME}.${TABLE_NAME}" where ${APP_NAME} refers to an
+# app target that was registered via the "add_cfe_app" function.
+#
+# Note that for backward compatibility, any name will be accepted
+# for TABLE_FQNAME.  However if this function cannot determine which
+# app the table is associated with, it will only have a default set
+# of INCLUDE_DIRECTORIES when building the C source file(s).  By
+# associating a table with an app using the conventions above, the
+# INCLUDE_DIRECTORIES from the parent app will be used when building the
+# tables.
+#
+# This function produces one or more library targets in CMake, using names
+# of the form: "tblobj_${TGT}_{TABLE_FQNAME}" where TGT reflects the name
+# of the target from targets.cmake and TABLE_FQNAME reflects the first
+# parameter to this function.
+#
+# The table tool must provide an implementation to use with add_cfe_tables().
+#
+function(add_cfe_tables TABLE_FQNAME TBL_DEFAULT_SRC_FILES)
 
-    if (TGTNAME)
-        set (TABLE_TGTLIST ${TGTNAME})
-    elseif (TARGET ${APP_NAME})
+    if (NOT TBL_DEFAULT_SRC_FILES)
+      message(FATAL_ERROR "Table source file list is empty")
+    endif()
+
+    get_filename_component(APP_NAME ${TABLE_FQNAME} NAME_WE)
+
+    # The passed-in name allows for a qualifier (in the form of APP_NAME.QUALIFIER) to get
+    # uniqueness in the generated target names.  If there is no qualifier, then there
+    # will potentially be a target name conflict.  To avoid this, generate a hash of the
+    # context of this call - the current directory, app/tgt names, and source files.  This
+    # should be unique but also produce the same hash when CMake is re-run.  The hash
+    # can then be used as a qualifier.
+    if (TABLE_FQNAME STREQUAL APP_NAME)
+      string(SHA1 CONTEXT_HASH
+        "${CMAKE_CURRENT_LIST_DIR}+${TGTNAME}+${APP_NAME}+${TBL_DEFAULT_SRC_FILES};${ARGN}"
+      )
+      set(TABLE_FQNAME "${APP_NAME}.tbl${CONTEXT_HASH}")
+
+      if ($ENV{VERBOSE})
+        message("No suffix specified, table build using ${TABLE_FQNAME} for ${APP_NAME} table")
+      endif()
+    endif()
+
+    # If "TGTNAME" is set, then use it directly
+    set(TABLE_TGTLIST ${TGTNAME})
+
+    if (TARGET ${APP_NAME}.table)
+      if (NOT TABLE_TGTLIST)
         set (TABLE_TGTLIST ${TGTLIST_${APP_NAME}})
+      endif()
     else()
-        # The first parameter should match the name of an app that was
-        # previously defined using "add_cfe_app".  If target-scope properties
-        # are used for include directories and compile definitions, this is needed
-        # to compile tables with the same include path/definitions as the app has.
-        # However historically this could have been any string, which still works
-        # if directory-scope properties are used for includes, so this is not
-        # an error.
-        message("NOTE: \"${APP_NAME}\" passed to add_cfe_tables is not a previously-defined application target")
+      # The first parameter should match the name of an app that was
+      # previously defined using "add_cfe_app".  If target-scope properties
+      # are used for include directories and compile definitions, this is needed
+      # to compile tables with the same include path/definitions as the app has.
+      # However historically this could have been any string, which still works
+      # if directory-scope properties are used for includes, so this is not
+      # an error.
+      message("NOTE: \"${APP_NAME}\" passed to add_cfe_tables is not a previously-defined application target")
+      if (NOT TABLE_TGTLIST)
         set (TABLE_TGTLIST ${APP_STATIC_TARGET_LIST} ${APP_DYNAMIC_TARGET_LIST})
+      endif()
     endif()
 
     # The table source must be compiled using the same "include_directories"
     # as any other target, but it uses the "add_custom_command" so there is
     # no automatic way to do this (at least in the older cmakes)
+    foreach(TGT ${TABLE_TGTLIST})
 
-    # Create the intermediate table objects using the target compiler,
-    # then use "elf2cfetbl" to convert to a .tbl file
-    foreach(TBL ${TBL_SRC_FILES} ${ARGN})
+      do_add_cfe_tables_impl("${TABLE_FQNAME}"
+        APP_NAME        "${APP_NAME}"
+        TARGET_NAME     "${TGT}"
+        INSTALL_SUBDIR  "${INSTALL_SUBDIR}"
+        ${TBL_DEFAULT_SRC_FILES} ${ARGN}
+      )
 
-        # Get name without extension (NAME_WE) and append to list of tables
-        get_filename_component(TBLWE ${TBL} NAME_WE)
-
-        foreach(TGT ${TABLE_TGTLIST})
-            set(TABLE_LIBNAME "${TGT}_${APP_NAME}_${TBLWE}")
-            set(TABLE_DESTDIR "${CMAKE_CURRENT_BINARY_DIR}/${TABLE_LIBNAME}")
-            set(TABLE_BINARY  "${TABLE_DESTDIR}/${TBLWE}.tbl")
-            file(MAKE_DIRECTORY ${TABLE_DESTDIR})
-
-            # Check if an override exists at the mission level (recommended practice)
-            # This allows a mission to implement a customized table without modifying
-            # the original - this also makes for easier merging/updating if needed.
-            if (EXISTS "${MISSION_DEFS}/tables/${TGT}_${TBLWE}.c")
-                set(TBL_SRC "${MISSION_DEFS}/tables/${TGT}_${TBLWE}.c")
-            elseif (EXISTS "${MISSION_SOURCE_DIR}/tables/${TGT}_${TBLWE}.c")
-                set(TBL_SRC "${MISSION_SOURCE_DIR}/tables/${TGT}_${TBLWE}.c")
-            elseif (EXISTS "${MISSION_DEFS}/${TGT}/tables/${TBLWE}.c")
-                set(TBL_SRC "${MISSION_DEFS}/${TGT}/tables/${TBLWE}.c")
-            elseif (EXISTS "${MISSION_DEFS}/tables/${TBLWE}.c")
-                set(TBL_SRC "${MISSION_DEFS}/tables/${TBLWE}.c")
-            elseif (EXISTS "${MISSION_SOURCE_DIR}/tables/${TBLWE}.c")
-                set(TBL_SRC "${MISSION_SOURCE_DIR}/tables/${TBLWE}.c")
-            elseif (IS_ABSOLUTE "${TBL}")
-                set(TBL_SRC "${TBL}")
-            else()
-                set(TBL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${TBL}")
-            endif()
-
-            if (NOT EXISTS "${TBL_SRC}")
-                message(FATAL_ERROR "ERROR: No source file for table ${TBLWE}")
-            else()
-                message("NOTE: Selected ${TBL_SRC} as source for ${APP_NAME}.${TBLWE} on ${TGT}")
-
-                # NOTE: On newer CMake versions this should become an OBJECT library which makes this simpler.
-                # On older versions one may not reference the TARGET_OBJECTS property from the custom command.
-                # As a workaround this is built into a static library, and then the desired object is extracted
-                # before passing to elf2cfetbl.  It is roundabout but it works.
-                add_library(${TABLE_LIBNAME} STATIC ${TBL_SRC})
-                target_link_libraries(${TABLE_LIBNAME} PRIVATE core_api)
-                if (TARGET ${APP_NAME})
-                    target_include_directories(${TABLE_LIBNAME} PRIVATE $<TARGET_PROPERTY:${APP_NAME},INCLUDE_DIRECTORIES>)
-                    target_compile_definitions(${TABLE_LIBNAME} PRIVATE $<TARGET_PROPERTY:${APP_NAME},COMPILE_DEFINITIONS>)
-                endif()
-
-                # IMPORTANT: This rule assumes that the output filename of elf2cfetbl matches
-                # the input file name but with a different extension (.o -> .tbl)
-                # The actual output filename is embedded in the source file (.c), however
-                # this must match and if it does not the build will break.  That's just the
-                # way it is, because NO make system supports changing rules based on the
-                # current content of a dependency (rightfully so).
-                add_custom_command(
-                    OUTPUT ${TABLE_BINARY}
-                    COMMAND ${CMAKE_COMMAND}
-                        -DCMAKE_AR=${CMAKE_AR}
-                        -DTBLTOOL=${MISSION_BINARY_DIR}/tools/elf2cfetbl/elf2cfetbl
-                        -DLIB=$<TARGET_FILE:${TABLE_LIBNAME}>
-                        -P ${CFE_SOURCE_DIR}/cmake/generate_table.cmake
-                    DEPENDS ${MISSION_BINARY_DIR}/tools/elf2cfetbl/elf2cfetbl ${TABLE_LIBNAME}
-                    WORKING_DIRECTORY ${TABLE_DESTDIR}
-                )
-
-                # Add a custom target to invoke the elf2cfetbl tool to generate the tbl file,
-                # and install that binary file to the staging area.
-                add_custom_target(${TABLE_LIBNAME}_tbl ALL DEPENDS ${TABLE_BINARY})
-                install(FILES ${TABLE_BINARY} DESTINATION ${TGT}/${INSTALL_SUBDIR})
-            endif()
-        endforeach()
-    endforeach()
-
+    endforeach(TGT ${TABLE_TGTLIST})
 
 endfunction(add_cfe_tables)
 
@@ -503,6 +524,80 @@ function(cfs_app_check_intf MODULE_NAME)
 endfunction(cfs_app_check_intf)
 
 
+##################################################################
+#
+# FUNCTION: setup_platform_msgids
+#
+# This is intended to support cases where MsgIDs for all apps
+# and modules are assigned in a single/unified header file
+#
+function(setup_platform_msgids)
+
+  set(PLATFORM_MSGID_HEADERFILE)
+
+  # In an EDS build, the msg IDs always come from EDS, there should not be a local msgids.h file
+  if (NOT CFE_EDS_ENABLED_BUILD)
+
+    # Check for the presence of a platform-specific msgid file
+    # This uses cfe_locate_implementation_file() as this returns whether or not it found one
+    cfe_locate_implementation_file(PLATFORM_MSGID_HEADERFILE "msgids.h"
+      PREFIX ${BUILD_CONFIG} cfs
+      SUBDIR config
+    )
+
+    # If a top level file was found, then create a wrapper around it called "cfs_msgids.h"
+    # Note that at this point it could be a list
+    if (PLATFORM_MSGID_HEADERFILE)
+
+      set(TEMP_WRAPPER_FILE_CONTENT)
+      foreach(SELECTED_FILE ${PLATFORM_MSGID_HEADERFILE})
+        file(TO_NATIVE_PATH "${SELECTED_FILE}" SRC_NATIVE_PATH)
+        list(APPEND TEMP_WRAPPER_FILE_CONTENT "#include \"${SRC_NATIVE_PATH}\"\n")
+      endforeach()
+
+      # Generate a header file
+      generate_c_headerfile("${CMAKE_BINARY_DIR}/inc/cfs_msgids.h" ${TEMP_WRAPPER_FILE_CONTENT})
+      unset(TEMP_WRAPPER_FILE_CONTENT)
+
+      # From here on use the wrapper file
+      set(PLATFORM_MSGID_HEADERFILE "cfs_msgids.h")
+
+    endif(PLATFORM_MSGID_HEADERFILE)
+
+  endif(NOT CFE_EDS_ENABLED_BUILD)
+
+  # Finally, export a CFGFILE_SRC variable for each of the deps
+  # This should make each respective "mission_build" create a wrapper
+  # that points directly at this global file, ignoring the default
+  if (PLATFORM_MSGID_HEADERFILE)
+
+    # Historically there has been a cfe_msgids.h defined at the core api level
+    # be sure to include this in the export list
+    set (OUTPUT_VAR_LIST
+      CORE_API_CFGFILE_SRC_cfe_msgids
+    )
+
+    # Slight inconsistency: for CFE core components, the cfe_ prefix is omitted in DEP_NAME
+    # To make this work without major impact, add it back in here
+    foreach(DEP_NAME ${MISSION_CORE_MODULES})
+      string(TOUPPER "${DEP_NAME}_CFGFILE_SRC" CFGSRC)
+      list(APPEND OUTPUT_VAR_LIST ${CFGSRC}_cfe_${DEP_NAME}_msgids)
+    endforeach(DEP_NAME ${MISSION_CORE_MODULES})
+
+    foreach(DEP_NAME ${MISSION_APPS})
+      string(TOUPPER "${DEP_NAME}_CFGFILE_SRC" CFGSRC)
+      list(APPEND OUTPUT_VAR_LIST ${CFGSRC}_${DEP_NAME}_msgids)
+    endforeach(DEP_NAME ${MISSION_APPS})
+
+    # This is the actual export to parent scope
+    foreach(VAR_NAME ${OUTPUT_VAR_LIST})
+      set(${VAR_NAME} ${PLATFORM_MSGID_HEADERFILE} PARENT_SCOPE)
+    endforeach(VAR_NAME ${OUTPUT_VAR_LIST})
+
+  endif (PLATFORM_MSGID_HEADERFILE)
+
+endfunction(setup_platform_msgids)
+
 
 
 ##################################################################
@@ -512,6 +607,16 @@ endfunction(cfs_app_check_intf)
 # Called by the top-level CMakeLists.txt to set up prerequisites
 #
 function(prepare)
+
+  # "cfetables" is a top level target to build all table files
+  # all generated table files will be added as dependencies to this target
+  add_custom_target(cfetables)
+
+  # The table tool must provide an implementation to use with add_cfe_tables().
+  # this is determined by the CFS_TABLETOOL_SCRIPT_DIR that must be exported
+  # from the parent build.
+  #
+  include(${CFS_TABLETOOL_SCRIPT_DIR}/add_cfe_tables_impl.cmake)
 
   # Choose the configuration file to use for OSAL on this system
   set(OSAL_CONFIGURATION_FILE)
@@ -550,6 +655,9 @@ function(prepare)
   set(BUILD_CONFIG ${BUILD_CONFIG_${TARGETSYSTEM}})
   list(REMOVE_AT BUILD_CONFIG 0)
   set(BUILD_CONFIG ${BUILD_CONFIG} PARENT_SCOPE)
+
+  # Check if the user has provided a platform-specific "msgids.h" file and set up a wrapper to it
+  setup_platform_msgids()
 
   # Pull in any application-specific platform-scope configuration
   # This may include user configuration files such as cfe_platform_cfg.h,
@@ -639,7 +747,6 @@ function(process_arch SYSVAR)
     endif()
   endforeach()
 
-
   # Add all core modules
   # The osal is handled explicitly (above) since this has special extra config
   foreach(DEP ${MISSION_CORE_INTERFACES} ${MISSION_CORE_MODULES})
@@ -713,7 +820,7 @@ function(process_arch SYSVAR)
       if (FILESRC)
         # In case the file is a symlink, follow it to get to the actual file
         get_filename_component(FILESRC "${FILESRC}" REALPATH)
-        message("NOTE: Selected ${FILESRC} as source for ${INSTFILE} on ${TGTNAME}")
+        message(STATUS "NOTE: Selected ${FILESRC} as source for ${INSTFILE} on ${TGTNAME}")
         install(FILES ${FILESRC} DESTINATION ${TGTNAME}/${INSTALL_SUBDIR} RENAME ${INSTFILE})
       else(FILESRC)
         message("WARNING: Install file ${INSTFILE} for ${TGTNAME} not found")

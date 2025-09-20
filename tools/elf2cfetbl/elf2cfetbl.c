@@ -59,6 +59,7 @@ int32 GetSrcFilename(void);
 int32 GetDstFilename(void);
 int32 OpenSrcFile(void);
 int32 OpenDstFile(void);
+int32 checkELFFileMagicNumber(void);
 int32 GetElfHeader(void);
 void  SwapElfHeader(void);
 int32 GetSectionHeader(int32 SectionIndex, union Elf_Shdr *SectionHeader);
@@ -596,6 +597,24 @@ uint16_t get_st_shndx(const union Elf_Sym *Symbol)
     }
 }
 
+/* Check status helper functions */
+void CheckStatusAndExit(int32 status)
+{
+    if (status != SUCCESS)
+    {
+        exit(status);
+    }
+}
+
+void CheckStatusCleanupAndExit(int32 status)
+{
+    if (status != SUCCESS)
+    {
+        FreeMemoryAllocations();
+        exit(status);
+    }
+}
+
 /**
  *
  */
@@ -606,30 +625,26 @@ int main(int argc, char *argv[])
     int32 i      = 0;
 
     Status = ProcessCmdLineOptions(argc, argv);
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusAndExit(Status);
 
     if (ReportVersion)
         OutputVersionInfo();
 
-    Status = GetSrcFilename();
     if (OutputHelp)
         OutputHelpInfo();
-    if (Status != SUCCESS)
-        return Status;
+
+    Status = GetSrcFilename();
+    CheckStatusAndExit(Status);
 
     Status = OpenSrcFile();
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusAndExit(Status);
 
     Status = GetElfHeader();
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusAndExit(Status);
 
     /* Get the string section header first */
     Status = GetSectionHeader(get_e_shstrndx(&ElfHeader), &SectionHeaderStringTable);
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusCleanupAndExit(Status);
 
     if (TargetWordsizeIs32Bit)
     {
@@ -642,21 +657,13 @@ int main(int argc, char *argv[])
 
     /* Allocate memory for all of the ELF object file section headers */
     Status = AllocateSectionHeaders();
-    if (Status != SUCCESS)
-    {
-        FreeMemoryAllocations();
-        return Status;
-    }
+    CheckStatusCleanupAndExit(Status);
 
     /* Read in each section header from input file */
     for (i = 0; i < get_e_shnum(&ElfHeader); i++)
     {
         Status = GetSectionHeader(i, SectionHeaderPtrs[i]);
-        if (Status != SUCCESS)
-        {
-            FreeMemoryAllocations();
-            return Status;
-        }
+        CheckStatusCleanupAndExit(Status);
     }
 
     if (StringTableDataOffset == 0)
@@ -667,21 +674,13 @@ int main(int argc, char *argv[])
 
     /* Allocate memory for all of the symbol table entries */
     Status = AllocateSymbols();
-    if (Status != SUCCESS)
-    {
-        FreeMemoryAllocations();
-        return Status;
-    }
+    CheckStatusCleanupAndExit(Status);
 
     /* Read in each symbol table entry */
     for (i = 0; i < NumSymbols; i++)
     {
         Status = GetSymbol(i, SymbolPtrs[i]);
-        if (Status != SUCCESS)
-        {
-            FreeMemoryAllocations();
-            return Status;
-        }
+        CheckStatusCleanupAndExit(Status);
     }
 
     if (TblDefSymbolIndex == -1)
@@ -693,26 +692,16 @@ int main(int argc, char *argv[])
 
     /* Read in the definition of the table file */
     Status = GetTblDefInfo();
-    if (Status != SUCCESS)
-    {
-        FreeMemoryAllocations();
-        return Status;
-    }
+    CheckStatusCleanupAndExit(Status);
 
     Status = GetDstFilename();
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusAndExit(Status);
 
     Status = OpenDstFile();
-    if (Status != SUCCESS)
-        return Status;
+    CheckStatusAndExit(Status);
 
     Status = LocateAndReadUserObject();
-    if (Status != SUCCESS)
-    {
-        FreeMemoryAllocations();
-        return Status;
-    }
+    CheckStatusCleanupAndExit(Status);
 
     Status = OutputDataToTargetFile();
 
@@ -1275,7 +1264,15 @@ int32 ProcessCmdLineOptions(int ArgumentCount, char *Arguments[])
 
 void OutputVersionInfo(void)
 {
-    printf("\n%s\n", ELF2CFETBL_VERSION_STRING);
+    char VersionString[ELF2CFETBL_CFG_MAX_VERSION_STR_LEN];
+
+    snprintf(VersionString, ELF2CFETBL_CFG_MAX_VERSION_STR_LEN,
+        "%s %s %s (Codename %s), Last Official Release: %s %s)",
+        "elf2cfetbl", ELF2CFETBL_REVISION == 0 ? "Development Build" : "Release",
+        ELF2CFETBL_VERSION, ELF2CFETBL_BUILD_CODENAME, "elf2cfetbl",
+        ELF2CFETBL_LAST_OFFICIAL);
+
+    printf("\n%s\n", VersionString);
 }
 
 /**
@@ -1436,6 +1433,7 @@ int32 OpenSrcFile(void)
 int32 OpenDstFile(void)
 {
     struct stat dststat;
+    int32       Status = SUCCESS;
 
     /* Check to see if output file can be opened and written */
     DstFileDesc = fopen(DstFilename, "w");
@@ -1451,12 +1449,36 @@ int32 OpenDstFile(void)
     {
         if (Verbose)
             printf("%s: Destination file permissions after open = 0x%X\n", DstFilename, dststat.st_mode);
-        chmod(DstFilename, dststat.st_mode & ~(S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH));
-        stat(DstFilename, &dststat);
+
+        Status = chmod(DstFilename, dststat.st_mode & ~(S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH));
+
+        if (Status != 0)
+        {
+            printf("%s: Error while attempting to modify file permissions\n", DstFilename);
+            return FAILED;
+        }
+
+        if (stat(DstFilename, &dststat) != 0)
+        {
+            printf("%s: Error retrieving file status after chmod\n", DstFilename);
+        }
+
         if (Verbose)
             printf("%s: Destination file permissions after chmod = 0x%X\n", DstFilename, dststat.st_mode);
     }
 
+    return SUCCESS;
+}
+
+/**
+ *
+ */
+
+int32 checkELFFileMagicNumber(void)
+{
+    if (get_e_ident(&ElfHeader, EI_MAG0) != ELFMAG0 || get_e_ident(&ElfHeader, EI_MAG1) != ELFMAG1 ||
+        get_e_ident(&ElfHeader, EI_MAG2) != ELFMAG2 || get_e_ident(&ElfHeader, EI_MAG3) != ELFMAG3)
+        return FAILED;
     return SUCCESS;
 }
 
@@ -1493,20 +1515,15 @@ int32 GetElfHeader(void)
     }
 
     if (Verbose)
-        printf("ELF Header:\n");
-    if (Verbose)
-        printf("   e_ident[EI_MAG0..3] = 0x%02x,%c%c%c\n", get_e_ident(&ElfHeader, EI_MAG0),
-               get_e_ident(&ElfHeader, EI_MAG1), get_e_ident(&ElfHeader, EI_MAG2), get_e_ident(&ElfHeader, EI_MAG3));
+    {
+        printf("ELF Header:\n"
+               "   e_ident[EI_MAG0..3] = 0x%02x,%c%c%c\n",
+               get_e_ident(&ElfHeader, EI_MAG0), get_e_ident(&ElfHeader, EI_MAG1), get_e_ident(&ElfHeader, EI_MAG2),
+               get_e_ident(&ElfHeader, EI_MAG3));
+    }
 
     /* Verify the ELF file magic number */
-    if (get_e_ident(&ElfHeader, EI_MAG0) != ELFMAG0)
-        Status = FAILED;
-    if (get_e_ident(&ElfHeader, EI_MAG1) != ELFMAG1)
-        Status = FAILED;
-    if (get_e_ident(&ElfHeader, EI_MAG2) != ELFMAG2)
-        Status = FAILED;
-    if (get_e_ident(&ElfHeader, EI_MAG3) != ELFMAG3)
-        Status = FAILED;
+    Status = checkELFFileMagicNumber();
 
     if (Status == FAILED)
     {
@@ -2256,9 +2273,10 @@ int32 GetStringFromMap(char *Result, ElfStrMap *Map, int32 Key)
 
 int32 GetTblDefInfo(void)
 {
-    int32  Status      = SUCCESS;
-    uint32 SeekOffset  = 0;
-    int32  NumDefsRead = 0;
+    int32    Status      = SUCCESS;
+    uint32   SeekOffset  = 0;
+    int32    NumDefsRead = 0;
+    uint64_t calculated_offset;
 
     /* Read the data to be used to format the CFE File and Table Headers */
     if ((get_st_size(SymbolPtrs[TblDefSymbolIndex]) != sizeof(CFE_TBL_FileDef_t)) &&
@@ -2271,8 +2289,8 @@ int32 GetTblDefInfo(void)
     else
     {
         /* fseek expects a long int, sh_offset and st_value are uint64 for elf64 */
-        uint64_t calculated_offset = get_sh_offset(SectionHeaderPtrs[get_st_shndx(SymbolPtrs[TblDefSymbolIndex])]) +
-                                     get_st_value(SymbolPtrs[TblDefSymbolIndex]);
+        calculated_offset = get_sh_offset(SectionHeaderPtrs[get_st_shndx(SymbolPtrs[TblDefSymbolIndex])]) +
+                            get_st_value(SymbolPtrs[TblDefSymbolIndex]);
         SeekOffset = (uint32_t)(calculated_offset);
         if (SeekOffset != calculated_offset)
         {
@@ -2327,11 +2345,12 @@ int32 GetTblDefInfo(void)
 
 int32 LocateAndReadUserObject(void)
 {
-    int32  Status     = SUCCESS;
-    int32  i          = 0;
-    int32  j          = 0;
-    uint32 SeekOffset = 0;
-    uint8  AByte;
+    int32    Status     = SUCCESS;
+    int32    i          = 0;
+    int32    j          = 0;
+    uint32   SeekOffset = 0;
+    uint8    AByte;
+    uint64_t calculated_offset;
 
     /* Search the symbol table for the user defined object */
     if (Verbose)
@@ -2424,9 +2443,8 @@ int32 LocateAndReadUserObject(void)
         else
         {
             /* Locate data associated with symbol */
-            uint64_t calculated_offset =
-                get_sh_offset(SectionHeaderPtrs[get_st_shndx(SymbolPtrs[UserObjSymbolIndex])]) +
-                get_st_value(SymbolPtrs[UserObjSymbolIndex]);
+            calculated_offset = get_sh_offset(SectionHeaderPtrs[get_st_shndx(SymbolPtrs[UserObjSymbolIndex])]) +
+                                get_st_value(SymbolPtrs[UserObjSymbolIndex]);
             SeekOffset = (uint32_t)(calculated_offset);
             if (SeekOffset != calculated_offset)
             {

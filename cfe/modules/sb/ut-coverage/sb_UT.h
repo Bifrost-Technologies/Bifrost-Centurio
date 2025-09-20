@@ -79,8 +79,8 @@ typedef struct
     uint16            Tlm16Param2;
 } SB_UT_TstPktWoSecHdr_t;
 
-#define SB_UT_CMD_MID_VALUE_BASE CFE_PLATFORM_CMD_MID_BASE + 1
-#define SB_UT_TLM_MID_VALUE_BASE CFE_PLATFORM_TLM_MID_BASE + 1
+#define SB_UT_CMD_MID_VALUE_BASE 0x100
+#define SB_UT_TLM_MID_VALUE_BASE 0x200
 
 /* SB unit test functions */
 /*****************************************************************************/
@@ -1200,6 +1200,21 @@ void Test_CreatePipe_EmptyPipeName(void);
 
 /*****************************************************************************/
 /**
+** \brief Test create pipe response to a NULL pipe name
+**
+** \par Description
+**        This function tests the create pipe response to a null pipe name pointer.
+**
+** \par Assumptions, External Events, and Notes:
+**        None
+**
+** \returns
+**        This function does not return a value.
+******************************************************************************/
+void Test_CreatePipe_PipeName_NullPtr(void);
+
+/*****************************************************************************/
+/**
 ** \brief Test create pipe response to a pipe name longer than allowed
 **
 ** \par Description
@@ -1854,7 +1869,7 @@ void Test_TransmitMsg_BasicSend(void);
 
 /*****************************************************************************/
 /**
-** \brief Test successful send/receive for packet sequence count
+** \brief Test successful send of messages with header update
 **
 ** \par Description
 **        This function tests successful send/receive for packet sequence
@@ -1866,7 +1881,7 @@ void Test_TransmitMsg_BasicSend(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_TransmitMsg_SequenceCount(void);
+void Test_TransmitMsg_UpdateHeader(void);
 
 /*****************************************************************************/
 /**
@@ -2032,7 +2047,7 @@ void Test_TransmitMsg_DisabledDestination(void);
 
 /*****************************************************************************/
 /**
-** \brief Test CFE_SB_BroadcastBufferToRoute
+** \brief Test CFE_SB_TransmitTxn_BroadcastToRoute
 **
 ** \par Description
 **        This function tests broadcasting a message buffer with the metadata.
@@ -2043,23 +2058,7 @@ void Test_TransmitMsg_DisabledDestination(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_BroadcastBufferToRoute(void);
-
-/*****************************************************************************/
-/**
-** \brief Test response to sending a message which has no subscribers
-**
-** \par Description
-**        This function tests the response to sending a message which has no
-**        subscribers.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_TransmitMsgValidate_NoSubscribers(void);
+void Test_TransmitTxn_PipeHandler(void);
 
 /*****************************************************************************/
 /**
@@ -2075,7 +2074,7 @@ void Test_TransmitMsgValidate_NoSubscribers(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_TransmitMsgValidate_InvalidMsgId(void);
+void Test_TransmitTxn_SetupFromMsg_InvalidMsgId(void);
 
 /*****************************************************************************/
 /**
@@ -2092,7 +2091,7 @@ void Test_TransmitMsgValidate_InvalidMsgId(void);
 ** \returns
 **        This function does not return a value.
 ******************************************************************************/
-void Test_TransmitMsgValidate_MaxMsgSizePlusOne(void);
+void Test_TransmitTxn_SetupFromMsg_MaxMsgSizePlusOne(void);
 
 /*****************************************************************************/
 /**
@@ -2444,25 +2443,6 @@ void Test_CFE_SB_BadPipeInfo(void);
 
 /*****************************************************************************/
 /**
-** \brief Test TransmitMsgFull function paths
-**
-** \par Description
-**        This function tests branch paths in the TransmitMsgFull function.
-**
-** \par Assumptions, External Events, and Notes:
-**        None
-**
-** \returns
-**        This function does not return a value.
-******************************************************************************/
-void Test_SB_TransmitMsgPaths_Nominal(void);
-void Test_SB_TransmitMsgPaths_LimitErr(void);
-void Test_SB_TransmitMsgPaths_FullErr(void);
-void Test_SB_TransmitMsgPaths_WriteErr(void);
-void Test_SB_TransmitMsgPaths_IgnoreOpt(void);
-
-/*****************************************************************************/
-/**
 ** \brief Test ReceiveBuffer function unsubscribe/resubscribe path
 **
 ** \par Description
@@ -2498,5 +2478,15 @@ void Test_SB_Macros(void);
 void Test_SB_CCSDSPriHdr_Macros(void);
 void Test_SB_CCSDSSecHdr_Macros(void);
 void Test_SB_IdxPushPop(void);
+
+/*
+ * TopicID <-> MsgID conversion test routines
+ */
+void Test_CFE_SB_CmdTopicIdToMsgId(void);
+void Test_CFE_SB_TlmTopicIdToMsgId(void);
+void Test_CFE_SB_GlobalCmdTopicIdToMsgId(void);
+void Test_CFE_SB_GlobalTlmTopicIdToMsgId(void);
+void Test_CFE_SB_LocalCmdTopicIdToMsgId(void);
+void Test_CFE_SB_LocalTlmTopicIdToMsgId(void);
 
 #endif /* SB_UT_H */

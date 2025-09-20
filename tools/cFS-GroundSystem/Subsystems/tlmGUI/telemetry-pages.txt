@@ -28,3 +28,5 @@ SB OneSub Tlm,             GenericTelemetry.py,     0x80E,   cfe-sb-onesub-tlm.t
 ES Shell Tlm,              GenericTelemetry.py,     0x80F,   cfe-es-shell-tlm.txt
 ES MEMSTATS Tlm,           GenericTelemetry.py,     0x810,   cfe-es-memstats-tlm.txt
 ES BlockStats Tlm 1,       GenericTelemetry.py,     0x810,   cfe-es-blockstats_1-tlm.txt
+Centurio Nav HK,           GenericTelemetry.py,     0x894,   cfs-centurio-nav-hk-tlm.txt
+Centurio Nav Viz,         CenturioNavViz.py,       0x894,   null

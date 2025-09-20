@@ -27,8 +27,10 @@
 #include "cfe_version.h"
 #include "target_config.h"
 
-#include "cfe_config_map.h"
+#include "cfe_config_nametable.h"
 #include "cfe_config_ids.h"
+
+#include "cfe_config_external.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -145,7 +147,7 @@ void CFE_Config_SetupModuleVersions(CFE_ConfigName_t *ModuleListSet[], size_t Se
 
     static const char IDNAME_PREFIX[] = "MOD_SRCVER_";
 
-    NamePtr = CFE_CONFIG_IDNAME_MAP;
+    NamePtr = CFE_CONFIGID_NAMETABLE;
     for (OffsetVal = 0; OffsetVal < CFE_ConfigIdOffset_MAX; ++OffsetVal)
     {
         if (NamePtr->Name != NULL && strncmp(NamePtr->Name, IDNAME_PREFIX, sizeof(IDNAME_PREFIX) - 1) == 0)
@@ -170,11 +172,16 @@ void CFE_Config_SetupModuleVersions(CFE_ConfigName_t *ModuleListSet[], size_t Se
 void CFE_Config_SetupBasicBuildInfo(void)
 {
     const char *KeyVal;
+    char        VersionString[CFE_CFG_MAX_VERSION_STR_LEN];
 
     /* Global mission name */
     CFE_Config_SetString(CFE_CONFIGID_MISSION_NAME, GLOBAL_CONFIGDATA.MissionName);
     KeyVal = CFE_Config_FindTargetKeyValue(GLOBAL_CONFIGDATA.ModuleVersionList, "MISSION");
     CFE_Config_SetString(CFE_CONFIGID_MISSION_SRCVER, KeyVal);
+
+    /* Global mission EDS runtime DB */
+    CFE_Config_SetObjPointer(CFE_CONFIGID_MISSION_EDS_DB, GLOBAL_CONFIGDATA.EdsDb);
+    CFE_Config_SetObjPointer(CFE_CONFIGID_MISSION_SBINTF_DB, GLOBAL_CONFIGDATA.SbIntfDb);
 
     /* propagate the version numbers from version.h */
     CFE_Config_SetValue(CFE_CONFIGID_CORE_VERSION_MAJOR, CFE_MAJOR_VERSION);
@@ -184,7 +191,9 @@ void CFE_Config_SetupBasicBuildInfo(void)
     CFE_Config_SetValue(CFE_CONFIGID_CORE_VERSION_BUILDNUM, CFE_BUILD_NUMBER);
 
     CFE_Config_SetString(CFE_CONFIGID_CORE_VERSION_BASELINE, CFE_BUILD_BASELINE);
-    CFE_Config_SetString(CFE_CONFIGID_CORE_VERSION_DESCRIPTION, CFE_VERSION_STRING);
+    CFE_Config_GetVersionString(VersionString, CFE_CFG_MAX_VERSION_STR_LEN, "cFE", CFE_SRC_VERSION, CFE_BUILD_CODENAME,
+                                CFE_LAST_OFFICIAL);
+    CFE_Config_SetString(CFE_CONFIGID_CORE_VERSION_DESCRIPTION, VersionString);
 
     /*
      * Initialize values from the "target_config" CFE internal object
@@ -218,6 +227,7 @@ int32 CFE_Config_Init(void)
 
     CFE_Config_SetupBasicBuildInfo();
     CFE_Config_SetupModuleVersions(ModuleListSet, 2, GLOBAL_CONFIGDATA.ModuleVersionList);
+    CFE_Config_SetupPlatformConfigInfo();
 
     return CFE_SUCCESS;
 }

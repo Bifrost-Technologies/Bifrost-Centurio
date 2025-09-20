@@ -597,7 +597,6 @@ int32 OS_ObjectIdFindNextFree(OS_object_token_t *token)
 
     base_id       = OS_GetBaseForObjectType(token->obj_type);
     max_id        = OS_GetMaxForObjectType(token->obj_type);
-    objtype_state = &OS_objtype_state[token->obj_type];
 
     if (max_id == 0)
     {
@@ -610,8 +609,9 @@ int32 OS_ObjectIdFindNextFree(OS_object_token_t *token)
     }
     else
     {
-        return_code = OS_ERR_NO_FREE_IDS;
-        serial      = OS_ObjectIdToSerialNumber_Impl(objtype_state->last_id_issued);
+        return_code   = OS_ERR_NO_FREE_IDS;
+        objtype_state = &OS_objtype_state[token->obj_type];
+        serial        = OS_ObjectIdToSerialNumber_Impl(objtype_state->last_id_issued);
     }
 
     for (i = 0; i < max_id; ++i)
@@ -1358,7 +1358,7 @@ void OS_ForEachObject(osal_id_t creator_id, OS_ArgCallback_t callback_ptr, void 
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-void OS_ForEachObjectOfType(osal_objtype_t idtype, osal_id_t creator_id, OS_ArgCallback_t callback_ptr,
+void OS_ForEachObjectOfType(osal_objtype_t objtype, osal_id_t creator_id, OS_ArgCallback_t callback_ptr,
                             void *callback_arg)
 {
     OS_object_iter_t    iter;
@@ -1368,7 +1368,7 @@ void OS_ForEachObjectOfType(osal_objtype_t idtype, osal_id_t creator_id, OS_ArgC
     filter.user_callback = callback_ptr;
     filter.user_arg      = callback_arg;
 
-    if (OS_ObjectIdIteratorInit(OS_ForEachFilterCreator, &filter, idtype, &iter) == OS_SUCCESS)
+    if (OS_ObjectIdIteratorInit(OS_ForEachFilterCreator, &filter, objtype, &iter) == OS_SUCCESS)
     {
         while (OS_ObjectIdIteratorGetNext(&iter))
         {

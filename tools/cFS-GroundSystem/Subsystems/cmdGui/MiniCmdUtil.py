@@ -21,6 +21,7 @@
 
 import mmap
 import socket
+import struct
 from collections import namedtuple
 
 
@@ -42,7 +43,10 @@ class MiniCmdUtil:
         ("k", "int64b"): type_signature(8, True, "big"),
         ("w", "uint16b"): type_signature(2, False, "big"),
         ("x", "uint32b"): type_signature(4, False, "big"),
-        ("y", "uint64b"): type_signature(8, False, "big")
+        ("y", "uint64b"): type_signature(8, False, "big"),
+        # Floating point support
+        ("f", "float", "float32"): type_signature(4, False, None),
+        ("d", "double", "float64"): type_signature(8, False, None),
     }
 
     def __init__(self,
@@ -61,11 +65,16 @@ class MiniCmdUtil:
         self.parameters = parameters
         self.payload = bytearray()
         self.packet = bytearray()
-        with open("/tmp/OffsetData", "r+b") as f:
-            self.mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+        # Default to header v2 offsets (4,4) if OffsetData is missing
+        self.mm = None
+        try:
+            with open("/tmp/OffsetData", "r+b") as f:
+                self.mm = mmap.mmap(f.fileno(), 0, prot=mmap.PROT_READ)
+        except Exception:
+            self.mm = None
 
-        self.cmd_offset_pri = 0
-        self.cmd_offset_sec = 0
+        self.cmd_offset_pri = 4
+        self.cmd_offset_sec = 4
         self.checksum = 0xFF
         self.cfs_cmd_sec_hdr = bytearray(2)
 
@@ -87,20 +96,29 @@ class MiniCmdUtil:
                 items = param.split("=")  # e.g. ["--uint16", "2"]
                 if "--string" not in param:  # non-string param
                     data_type = items[0].strip("-")  # Remove "--" prefix
-                    data_val = int(items[1])
-                    for key in self.dataTypes:  # Loop thru dictionary keys
-                        if data_type in key:  # Check if e.g. "uint16" in key tuple
-                            # Get the TypeSignature tuple
+                    # Determine if float/double or integer type
+                    is_float = data_type in {"f", "float", "float32"}
+                    is_double = data_type in {"d", "double", "float64"}
+                    # Find matching type signature
+                    type_sig = None
+                    for key in self.dataTypes:
+                        if data_type in key:
                             type_sig = self.dataTypes[key]
-                            break  # Stop checking dictionary
-                    # If TypeSignature endian is None, get the
-                    # user-provided/default endian. Otherwise get
-                    # the TypeSignature endian
+                            break
+                    if type_sig is None:
+                        raise ValueError(f"Unsupported data type: {data_type}")
                     endian = type_sig.endian or self.endian
-                    # Convert to bytes of correct length, endianess, and sign
-                    data_val_b = data_val.to_bytes(type_sig.byteLen,
-                                                   byteorder=endian,
-                                                   signed=type_sig.signed)
+
+                    if is_float or is_double:
+                        # Convert to IEEE-754 binary per endian
+                        fmt = (">" if endian == "big" else "<") + ("f" if is_float else "d")
+                        data_val_b = struct.pack(fmt, float(items[1]))
+                    else:
+                        # Integer types
+                        data_val = int(items[1])
+                        data_val_b = data_val.to_bytes(type_sig.byteLen,
+                                                       byteorder=endian,
+                                                       signed=type_sig.signed)
                     # Add data to payload bytearray
                     self.payload.extend(data_val_b)
                 else:
@@ -144,8 +162,10 @@ class MiniCmdUtil:
         return bytes_sent > 0
 
     def _get_offsets(self):
-        try:
-            self.cmd_offset_pri = self.mm[1]
-            self.cmd_offset_sec = self.mm[2]
-        except ValueError:
-            pass
+        if self.mm is not None:
+            try:
+                self.cmd_offset_pri = self.mm[1]
+                self.cmd_offset_sec = self.mm[2]
+            except Exception:
+                # Fallback already set to (4,4)
+                pass

@@ -172,9 +172,8 @@ int32 OS_FileSys_Initialize(char *address, const char *fsdevname, const char *fs
          * contains the string "RAM" then it is a RAM disk. Otherwise
          * leave the type as UNKNOWN and let the implementation decide.
          */
-        if (filesys->fstype == OS_FILESYS_TYPE_UNKNOWN &&
-            (filesys->address != NULL || strncmp(filesys->volume_name, OS_FILESYS_RAMDISK_VOLNAME_PREFIX,
-                                                 sizeof(OS_FILESYS_RAMDISK_VOLNAME_PREFIX) - 1) == 0))
+        if (filesys->address != NULL || strncmp(filesys->volume_name, OS_FILESYS_RAMDISK_VOLNAME_PREFIX,
+                                                sizeof(OS_FILESYS_RAMDISK_VOLNAME_PREFIX) - 1) == 0)
         {
             filesys->fstype = OS_FILESYS_TYPE_VOLATILE_DISK;
         }
@@ -244,7 +243,6 @@ int32 OS_FileSysAddFixedMap(osal_id_t *filesys_id, const char *phys_path, const 
     OS_filesys_internal_record_t *filesys;
     int32                         return_code;
     OS_object_token_t             token;
-    const char *                  dev_name;
 
     /*
      * Validate inputs
@@ -253,33 +251,14 @@ int32 OS_FileSysAddFixedMap(osal_id_t *filesys_id, const char *phys_path, const 
     OS_CHECK_STRING(phys_path, sizeof(filesys->system_mountpt), OS_FS_ERR_PATH_TOO_LONG);
     OS_CHECK_PATHNAME(virt_path);
 
-    /*
-     * Generate a dev name by taking the basename of the phys_path.
-     */
-    dev_name = strrchr(phys_path, '/');
-    if (dev_name == NULL)
-    {
-        dev_name = phys_path;
-    }
-    else
-    {
-        ++dev_name;
-    }
-
-    if (memchr(dev_name, 0, sizeof(filesys->volume_name)) == NULL)
-    {
-        return OS_ERR_NAME_TOO_LONG;
-    }
-
-    return_code = OS_ObjectIdAllocateNew(LOCAL_OBJID_TYPE, dev_name, &token);
+    return_code = OS_ObjectIdAllocateNew(LOCAL_OBJID_TYPE, virt_path, &token);
     if (return_code == OS_SUCCESS)
     {
         filesys = OS_OBJECT_TABLE_GET(OS_filesys_table, token);
 
         /* Reset the table entry and save the name */
-        OS_OBJECT_INIT(token, filesys, device_name, dev_name);
+        OS_OBJECT_INIT(token, filesys, virtual_mountpt, virt_path);
 
-        strncpy(filesys->volume_name, dev_name, sizeof(filesys->volume_name) - 1);
         strncpy(filesys->system_mountpt, phys_path, sizeof(filesys->system_mountpt) - 1);
         strncpy(filesys->virtual_mountpt, virt_path, sizeof(filesys->virtual_mountpt) - 1);
 
@@ -677,6 +656,7 @@ int32 OS_TranslatePath(const char *VirtualPath, char *LocalPath)
     OS_object_token_t             token;
     int32                         return_code;
     const char *                  name_ptr;
+    char *                        result;
     OS_filesys_internal_record_t *filesys;
     size_t                        SysMountPointLen;
     size_t                        VirtPathLen;
@@ -719,6 +699,15 @@ int32 OS_TranslatePath(const char *VirtualPath, char *LocalPath)
     ** All valid Virtual paths must start with a '/' character
     */
     if (VirtualPath[0] != '/')
+    {
+        return OS_FS_ERR_PATH_INVALID;
+    }
+
+    /*
+    ** Preventing backing out of the virtual mount point
+    */
+    result = strstr(VirtualPath, "..");
+    if (result)
     {
         return OS_FS_ERR_PATH_INVALID;
     }

@@ -24,15 +24,15 @@ jobs:
     #Continue if check-for-duplicates found no duplicates. Always runs for pull-requests.
     needs: check-for-duplicates
     if: ${{ needs.check-for-duplicates.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
       - name: Install Dependencies
-        run: sudo apt-get install doxygen graphviz -y
+        run: sudo apt-get update && sudo apt-get install doxygen graphviz -y
 
       - name: Checkout submodule
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up for build
         run: |
@@ -45,7 +45,7 @@ jobs:
           mv build/docs/osal-apiguide-warnings.log osal-apiguide-warnings.log
 
       - name: Archive Osal Guide Build Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OSAL Guide Artifacts
           path: |

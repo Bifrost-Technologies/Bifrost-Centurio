@@ -17,8 +17,11 @@
 #
 
 # Development Build Macro Definitions
-_cFS_GrndSys_build_number = 43
-_cFS_GrndSys_build_baseline = "v3.0.0-rc4"
+_cFS_GrndSys_build_number = 18
+_cFS_GrndSys_build_baseline = "7.2"
+_cFS_GrndSys_build_dev_baseline = "equuleus-rc1"
+_cFS_GrndSys_build_dev_cycle = "equuleus-rc2"
+_cFS_GrndSys_build_codename = "Equuleus"
 
 # Version Number Definitions see doxygen docs for definitions
 _cFS_GrndSys_MAJOR = 2 # Major version number 
@@ -31,11 +34,11 @@ _cFS_GrndSys_REVISION = 0 # Revision version number
 # Reserved for mission use to denote patches/customizations as needed.
 # Values 1-254 are reserved for mission use to denote patches/customizations as # needed. NOTE: Reserving 0 and 0xFF for cFS open-source development use 
 # (pending resolution of nasa/cFS#440)
-_cFS_GrndSys_MISSIONREV = 255 
+_cFS_GrndSys_MISSIONREV = 255
 
 # Development Build format for __version__
 # Baseline git tag + Number of commits since baseline
-__version__ = "+dev".join((_cFS_GrndSys_build_baseline,str(_cFS_GrndSys_build_number)))
+__version__ = "+".join((_cFS_GrndSys_build_baseline, _cFS_GrndSys_build_dev_baseline + "_dev" + str(_cFS_GrndSys_build_number)))
 
 # Development Build format for __version_string__
 _version_string = " cFS-GroundSystem DEVELOPMENT BUILD\n " + __version__

@@ -24,16 +24,22 @@
 #define TO_LAB_VERSION_H
 
 /* Development Build Macro Definitions */
-#define TO_LAB_BUILD_NUMBER 35 /*!< Development Build: Number of commits since baseline */
-#define TO_LAB_BUILD_BASELINE \
-    "v2.5.0-rc4" /*!< Development Build: git tag that is the base for the current development */
+#define TO_LAB_BUILD_NUMBER     62 /*!< Development Build: Number of commits since baseline */
+#define TO_LAB_BUILD_BASELINE   "equuleus-rc1" /*!< Development Build: git tag that is the base for the current development */
+#define TO_LAB_BUILD_DEV_CYCLE  "equuleus-rc2" /**< @brief Development: Release name for current development cycle */
+#define TO_LAB_BUILD_CODENAME   "Equuleus" /**< @brief: Development: Code name for the current build */
 
 /*
  * Version Macros, see \ref cfsversions for definitions.
  */
 #define TO_LAB_MAJOR_VERSION 2  /*!< @brief Major version number */
 #define TO_LAB_MINOR_VERSION 3  /*!< @brief Minor version number */
-#define TO_LAB_REVISION      99 /*!< @brief Revision version number. Value of 99 indicates a development version.*/
+#define TO_LAB_REVISION      0 /*!< @brief Revision version number. Value of 0 indicates a development version.*/
+
+/**
+ * @brief Last official release.
+ */
+#define TO_LAB_LAST_OFFICIAL "v2.3.0"
 
 /*!
  * @brief Mission revision.
@@ -53,12 +59,12 @@
  */
 #define TO_LAB_VERSION TO_LAB_BUILD_BASELINE "+dev" TO_LAB_STR(TO_LAB_BUILD_NUMBER)
 
-/*! @brief Development Build Version String.
- * @details Reports the current development build's baseline, number, and name. Also includes a note about the latest
- * official version. @n See @ref cfsversions for format differences between development and release versions.
+/**
+ * @brief Max Version String length.
+ * 
+ * Maximum length that a TO_LAB version string can be.
+ * 
  */
-#define TO_LAB_VERSION_STRING                   \
-    " TO Lab DEVELOPMENT BUILD " TO_LAB_VERSION \
-    ", Last Official Release: v2.3.0" /* For full support please use this version */
+#define TO_LAB_CFG_MAX_VERSION_STR_LEN 256
 
 #endif

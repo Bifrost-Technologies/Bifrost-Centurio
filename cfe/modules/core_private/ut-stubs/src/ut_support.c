@@ -43,14 +43,14 @@ uint8 UT_Endianess;
 static char           UT_appname[80];
 static char           UT_subsys[5];
 static CFE_ES_AppId_t UT_AppID;
-static uint32         UT_LastCDSSize = 0;
+static size_t         UT_LastCDSSize = 0;
 
 typedef union
 {
     long long int AlignLong;
     long double   AlignDbl;
     void *        AlignPtr;
-    char          Content[128 * 1024];
+    char          Content[2 * CFE_PLATFORM_ES_MAX_BLOCK_SIZE];
 } UT_Buffer_t;
 
 static UT_Buffer_t UT_CFE_ES_MemoryPool;
@@ -68,6 +68,8 @@ static uint16 UT_SendTimedEventHistory[UT_EVENT_HISTORY_SIZE];
 static uint16 UT_SendEventAppIDHistory[UT_EVENT_HISTORY_SIZE * 10];
 
 int32 dummy_function(void);
+
+static const UT_EntryKey_t UT_TABLE_DISPATCHER = 0;
 
 /*
 ** Functions
@@ -195,6 +197,38 @@ void UT_ResetPoolBufferIndex(void)
     UT_SetDataBuffer(UT_KEY(CFE_ES_GetPoolBuf), &UT_CFE_ES_MemoryPool, sizeof(UT_CFE_ES_MemoryPool), false);
 }
 
+void UT_DispatchTableHandler(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
+{
+    UT_TaskPipeDispatchId_t *DispatchId    = UserObj;
+    const CFE_SB_Buffer_t *  Buffer        = UT_Hook_GetArgValueByName(Context, "Buffer", const CFE_SB_Buffer_t *);
+    const void *             DispatchTable = UT_Hook_GetArgValueByName(Context, "DispatchTable", const void *);
+    const uint8 *            Addr;
+    CFE_Status_t (*MsgHandler)(const CFE_SB_Buffer_t *);
+    CFE_Status_t Status;
+
+    MsgHandler = NULL;
+    UT_Stub_GetInt32StatusCode(Context, &Status);
+
+    if (Status == 0 && DispatchId != NULL)
+    {
+        Status = DispatchId->DispatchError;
+
+        if (DispatchId->Method == UT_TaskPipeDispatchMethod_TABLE_OFFSET && DispatchTable != NULL)
+        {
+            Addr = DispatchTable;
+            Addr += DispatchId->TableOffset;
+            memcpy(&MsgHandler, Addr, sizeof(void *));
+        }
+    }
+
+    if (MsgHandler != NULL)
+    {
+        Status = MsgHandler(Buffer);
+    }
+
+    UT_Stub_SetReturnValue(FuncKey, Status);
+}
+
 /*
 ** Sets up the MSG stubs in preparation to invoke a "TaskPipe" dispatch function
 **
@@ -204,21 +238,58 @@ void UT_ResetPoolBufferIndex(void)
 void UT_SetupBasicMsgDispatch(const UT_TaskPipeDispatchId_t *DispatchReq, CFE_MSG_Size_t MsgSize,
                               bool ExpectFailureEvent)
 {
+    CFE_Status_t ErrorCode;
+
     if (DispatchReq != NULL)
     {
-        /* Set up for the typical task pipe related calls */
-        UT_SetDataBuffer(UT_KEY(CFE_MSG_GetMsgId), (void *)&DispatchReq->MsgId, sizeof(DispatchReq->MsgId), true);
-        UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &MsgSize, sizeof(MsgSize), true);
-        UT_SetDataBuffer(UT_KEY(CFE_MSG_GetFcnCode), (void *)&DispatchReq->CommandCode,
-                         sizeof(DispatchReq->CommandCode), true);
-
-        /* If a failure event is being set up, also set for MsgId/FcnCode retrieval as part of failure event reporting
-         */
-        if (ExpectFailureEvent)
+        if (DispatchReq->Method == UT_TaskPipeDispatchMethod_MSG_ID_CC)
         {
+            /* Set up for the typical task pipe related calls */
             UT_SetDataBuffer(UT_KEY(CFE_MSG_GetMsgId), (void *)&DispatchReq->MsgId, sizeof(DispatchReq->MsgId), true);
+            UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &MsgSize, sizeof(MsgSize), true);
             UT_SetDataBuffer(UT_KEY(CFE_MSG_GetFcnCode), (void *)&DispatchReq->CommandCode,
                              sizeof(DispatchReq->CommandCode), true);
+        }
+
+        if (DispatchReq->Method == UT_TaskPipeDispatchMethod_TABLE_OFFSET)
+        {
+            /* If the code uses EDS dispatch, this will invoke the right member function from the table (based on
+             * offset).  This requires setting up the function used for table dispatching first. */
+            if (UT_TABLE_DISPATCHER == 0)
+            {
+                UtAssert_Failed(
+                    "Setup error: Method set to TABLE_OFFSET but table dispatcher function is not configured");
+            }
+            else
+            {
+                UT_SetHandlerFunction(UT_TABLE_DISPATCHER, UT_DispatchTableHandler, (void *)DispatchReq);
+            }
+        }
+
+        /* If a failure event is being set up, set for MsgId/FcnCode retrieval as part of failure event reporting  */
+        if (ExpectFailureEvent || DispatchReq->DispatchError != CFE_SUCCESS)
+        {
+            UT_SetDataBuffer(UT_KEY(CFE_MSG_GetMsgId), (void *)&DispatchReq->MsgId, sizeof(DispatchReq->MsgId), true);
+            UT_SetDataBuffer(UT_KEY(CFE_MSG_GetSize), &MsgSize, sizeof(MsgSize), true);
+            UT_SetDataBuffer(UT_KEY(CFE_MSG_GetFcnCode), (void *)&DispatchReq->CommandCode,
+                             sizeof(DispatchReq->CommandCode), true);
+
+            if (UT_TABLE_DISPATCHER != 0)
+            {
+                /* If the code uses EDS dispatch, this will cause it to return the specified error */
+                if (DispatchReq->DispatchError != CFE_SUCCESS)
+                {
+                    ErrorCode = DispatchReq->DispatchError;
+                }
+                else
+                {
+                    /* If not specified, default to WRONG_MSG_LENGTH as this feature was historically used for testing
+                     * bad length */
+                    ErrorCode = CFE_STATUS_WRONG_MSG_LENGTH;
+                }
+
+                UT_SetDefaultReturnValue(UT_TABLE_DISPATCHER, ErrorCode);
+            }
         }
     }
     else
@@ -227,6 +298,10 @@ void UT_SetupBasicMsgDispatch(const UT_TaskPipeDispatchId_t *DispatchReq, CFE_MS
         UT_ResetState(UT_KEY(CFE_MSG_GetMsgId));
         UT_ResetState(UT_KEY(CFE_MSG_GetSize));
         UT_ResetState(UT_KEY(CFE_MSG_GetFcnCode));
+        if (UT_TABLE_DISPATCHER != 0)
+        {
+            UT_ResetState(UT_TABLE_DISPATCHER);
+        }
     }
 }
 
@@ -236,7 +311,7 @@ void UT_SetupBasicMsgDispatch(const UT_TaskPipeDispatchId_t *DispatchReq, CFE_MS
 ** This first sets up the various stubs according to the test case,
 ** then invokes the pipe function.
 */
-void UT_CallTaskPipe(void (*TaskPipeFunc)(CFE_SB_Buffer_t *), CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
+void UT_CallTaskPipe(void (*TaskPipeFunc)(const CFE_SB_Buffer_t *), const CFE_MSG_Message_t *MsgPtr, size_t MsgSize,
                      UT_TaskPipeDispatchId_t DispatchId)
 {
     union
@@ -267,13 +342,15 @@ int32 UT_SoftwareBusSnapshotHook(void *UserObj, int32 StubRetcode, uint32 CallCo
 {
     UT_SoftwareBusSnapshot_Entry_t *Snapshot = UserObj;
     const CFE_MSG_Message_t *       MsgPtr   = UT_Hook_GetArgValueByName(Context, "MsgPtr", CFE_MSG_Message_t *);
+    const uint8_t *                 BytePtr;
 
     if (MsgPtr != NULL && Snapshot != NULL)
     {
         ++Snapshot->Count;
         if (Snapshot->SnapshotSize > 0 && Snapshot->SnapshotBuffer != NULL)
         {
-            memcpy(Snapshot->SnapshotBuffer, &MsgPtr->Byte[Snapshot->SnapshotOffset], Snapshot->SnapshotSize);
+            BytePtr = (const uint8 *)MsgPtr;
+            memcpy(Snapshot->SnapshotBuffer, &BytePtr[Snapshot->SnapshotOffset], Snapshot->SnapshotSize);
         }
     }
 
@@ -310,7 +387,7 @@ void UT_SetStatusBSPResetArea(int32 status, uint32 Signature, uint32 ClockSignal
 /*
 ** Set the contents of the buffer to read
 */
-void UT_SetReadBuffer(void *Buff, int NumBytes)
+void UT_SetReadBuffer(void *Buff, size_t NumBytes)
 {
     UT_SetDataBuffer(UT_KEY(OS_read), Buff, NumBytes, true);
 }
@@ -318,7 +395,7 @@ void UT_SetReadBuffer(void *Buff, int NumBytes)
 /*
 ** Set the contents of the header to read
 */
-void UT_SetReadHeader(void *Hdr, int NumBytes)
+void UT_SetReadHeader(void *Hdr, size_t NumBytes)
 {
     UT_SetDataBuffer(UT_KEY(CFE_FS_ReadHeader), Hdr, NumBytes, true);
 }
@@ -334,7 +411,7 @@ void UT_SetDummyFuncRtn(int Return)
 /*
 ** Set the size of the ES reset area
 */
-void UT_SetSizeofESResetArea(int32 Size)
+void UT_SetSizeofESResetArea(size_t Size)
 {
     UT_ResetState(UT_KEY(CFE_PSP_GetResetArea));
     if (Size > 0)
@@ -351,12 +428,12 @@ void UT_SetSizeofESResetArea(int32 Size)
 /*
 ** Set the CDS size returned by the BSP
 */
-uint8 *UT_SetCDSSize(int32 Size)
+uint8 *UT_SetCDSSize(size_t Size)
 {
     UT_ResetState(UT_KEY(CFE_PSP_GetCDSSize));
     UT_ResetState(UT_KEY(CFE_PSP_ReadFromCDS));
     UT_ResetState(UT_KEY(CFE_PSP_WriteToCDS));
-    if (Size <= 0)
+    if (Size == 0)
     {
         UT_LastCDSSize = 0;
         return NULL;
@@ -460,7 +537,7 @@ uint16 UT_GetNumEventsSent(void)
 */
 void UT_DisplayPkt(CFE_MSG_Message_t *MsgPtr, size_t size)
 {
-    uint8 *BytePtr = MsgPtr->Byte;
+    uint8 *BytePtr = (uint8 *)MsgPtr;
     size_t i;
     size_t BufSize = UT_MAX_MESSAGE_LENGTH;
     char   DisplayMsg[UT_MAX_MESSAGE_LENGTH];
@@ -507,7 +584,7 @@ CFE_ES_ResetData_t *UT_GetResetDataPtr(void)
 ** But on the upside this concession avoids a far more complicated issue of
 ** needing a fully-fledged implementation of printf in the OS_printf stub.
 */
-static int UT_StrCmpFormatStr(const char *FormatStr, const char *TestStr, uint32 FormatLength, uint32 TestLength)
+static int UT_StrCmpFormatStr(const char *FormatStr, const char *TestStr, size_t FormatLength, size_t TestLength)
 {
     const char *ChunkStart;
     const char *ChunkEnd;
@@ -607,13 +684,13 @@ static int UT_StrCmpFormatStr(const char *FormatStr, const char *TestStr, uint32
  * A string comparison function that will match exact strings only
  * (Printf style conversion strings are compared literally)
  */
-static int UT_StrCmpExact(const char *RefStr, const char *TestStr, uint32 RefLength, uint32 TestLength)
+static int UT_StrCmpExact(const char *RefStr, const char *TestStr, size_t RefLength, size_t TestLength)
 {
     return (RefLength == TestLength && memcmp(RefStr, TestStr, RefLength) == 0);
 }
 
 static uint32 UT_GetMessageCount(const char *Msg, UT_Buffer_t *Buf,
-                                 int (*Comparator)(const char *, const char *, uint32, uint32))
+                                 int (*Comparator)(const char *, const char *, size_t, size_t))
 {
     uint32 Count  = 0;
     uint32 MsgLen = strlen(Msg);

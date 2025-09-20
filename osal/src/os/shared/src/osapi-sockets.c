@@ -151,8 +151,87 @@ int32 OS_SocketOpen(osal_id_t *sock_id, OS_SocketDomain_t Domain, OS_SocketType_
  *  Purpose: Implemented per public OSAL API
  *           See description in API and header file for detail
  *
+ * This is now just a convenience/shorthand routine handling both bind
+ * and listen, preserved for backward compatibility.
+ *
  *-----------------------------------------------------------------*/
 int32 OS_SocketBind(osal_id_t sock_id, const OS_SockAddr_t *Addr)
+{
+    int32 return_code;
+
+    return_code = OS_SocketBindAddress(sock_id, Addr);
+    if (return_code == OS_SUCCESS)
+    {
+        return_code = OS_SocketListen(sock_id);
+        if (return_code == OS_ERR_INCORRECT_OBJ_TYPE)
+        {
+            /* This one is OK, it happens if the socket is a datagram/connectionless
+             * type that does not need to listen().  For backward compatibility, report
+             * success to the caller.
+             */
+            return_code = OS_SUCCESS;
+        }
+    }
+
+    return return_code;
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketListen(osal_id_t sock_id)
+{
+    OS_stream_internal_record_t *stream;
+    OS_object_token_t            token;
+    int32                        return_code;
+
+    return_code = OS_ObjectIdGetById(OS_LOCK_MODE_EXCLUSIVE, LOCAL_OBJID_TYPE, sock_id, &token);
+    if (return_code == OS_SUCCESS)
+    {
+        stream = OS_OBJECT_TABLE_GET(OS_stream_table, token);
+
+        /* This call is only applicable to stream sockets */
+        if (stream->socket_domain == OS_SocketDomain_INVALID || stream->socket_type != OS_SocketType_STREAM)
+        {
+            /* Not a stream socket */
+            return_code = OS_ERR_INCORRECT_OBJ_TYPE;
+        }
+        else if ((stream->stream_state & OS_STREAM_STATE_BOUND) == 0)
+        {
+            /* Socket must be bound to an address already */
+            return_code = OS_ERR_INCORRECT_OBJ_STATE;
+        }
+        else if ((stream->stream_state & (OS_STREAM_STATE_LISTENING | OS_STREAM_STATE_CONNECTED)) != 0)
+        {
+            /* Socket must be neither listening nor connected */
+            return_code = OS_ERR_INCORRECT_OBJ_STATE;
+        }
+        else
+        {
+            return_code = OS_SocketListen_Impl(&token);
+
+            if (return_code == OS_SUCCESS)
+            {
+                stream->stream_state |= OS_STREAM_STATE_LISTENING;
+            }
+        }
+
+        OS_ObjectIdRelease(&token);
+    }
+
+    return return_code;
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketBindAddress(osal_id_t sock_id, const OS_SockAddr_t *Addr)
 {
     OS_common_record_t *         record;
     OS_stream_internal_record_t *stream;
@@ -180,7 +259,7 @@ int32 OS_SocketBind(osal_id_t sock_id, const OS_SockAddr_t *Addr)
         }
         else
         {
-            return_code = OS_SocketBind_Impl(&token, Addr);
+            return_code = OS_SocketBindAddress_Impl(&token, Addr);
 
             if (return_code == OS_SUCCESS)
             {
@@ -202,7 +281,7 @@ int32 OS_SocketBind(osal_id_t sock_id, const OS_SockAddr_t *Addr)
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_SocketAccept(osal_id_t sock_id, osal_id_t *connsock_id, OS_SockAddr_t *Addr, int32 timeout)
+int32 OS_SocketAcceptAbs(osal_id_t sock_id, osal_id_t *connsock_id, OS_SockAddr_t *Addr, OS_time_t abs_timeout)
 {
     OS_common_record_t *         sock_record;
     OS_common_record_t *         conn_record;
@@ -263,7 +342,7 @@ int32 OS_SocketAccept(osal_id_t sock_id, osal_id_t *connsock_id, OS_SockAddr_t *
 
                 OS_SocketAddrInit_Impl(Addr, sock->socket_domain);
 
-                return_code = OS_SocketAccept_Impl(&sock_token, &conn_token, Addr, timeout);
+                return_code = OS_SocketAccept_Impl(&sock_token, &conn_token, Addr, abs_timeout);
 
                 if (return_code == OS_SUCCESS)
                 {
@@ -289,7 +368,18 @@ int32 OS_SocketAccept(osal_id_t sock_id, osal_id_t *connsock_id, OS_SockAddr_t *
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_SocketConnect(osal_id_t sock_id, const OS_SockAddr_t *Addr, int32 Timeout)
+int32 OS_SocketAccept(osal_id_t sock_id, osal_id_t *connsock_id, OS_SockAddr_t *Addr, int32 timeout)
+{
+    return OS_SocketAcceptAbs(sock_id, connsock_id, Addr, OS_TimeFromRelativeMilliseconds(timeout));
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketConnectAbs(osal_id_t sock_id, const OS_SockAddr_t *Addr, OS_time_t abs_timeout)
 {
     OS_stream_internal_record_t *stream;
     OS_object_token_t            token;
@@ -314,7 +404,7 @@ int32 OS_SocketConnect(osal_id_t sock_id, const OS_SockAddr_t *Addr, int32 Timeo
         }
         else
         {
-            return_code = OS_SocketConnect_Impl(&token, Addr, Timeout);
+            return_code = OS_SocketConnect_Impl(&token, Addr, abs_timeout);
 
             if (return_code == OS_SUCCESS)
             {
@@ -388,7 +478,19 @@ int32 OS_SocketShutdown(osal_id_t sock_id, OS_SocketShutdownMode_t Mode)
  *           See description in API and header file for detail
  *
  *-----------------------------------------------------------------*/
-int32 OS_SocketRecvFrom(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr, int32 timeout)
+int32 OS_SocketConnect(osal_id_t sock_id, const OS_SockAddr_t *Addr, int32 timeout)
+{
+    return OS_SocketConnectAbs(sock_id, Addr, OS_TimeFromRelativeMilliseconds(timeout));
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketRecvFromAbs(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr,
+                           OS_time_t abs_timeout)
 {
     OS_stream_internal_record_t *stream;
     OS_object_token_t            token;
@@ -418,13 +520,24 @@ int32 OS_SocketRecvFrom(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockA
         }
         else
         {
-            return_code = OS_SocketRecvFrom_Impl(&token, buffer, buflen, RemoteAddr, timeout);
+            return_code = OS_SocketRecvFrom_Impl(&token, buffer, buflen, RemoteAddr, abs_timeout);
         }
 
         OS_ObjectIdRelease(&token);
     }
 
     return return_code;
+}
+
+/*----------------------------------------------------------------
+ *
+ *  Purpose: Implemented per public OSAL API
+ *           See description in API and header file for detail
+ *
+ *-----------------------------------------------------------------*/
+int32 OS_SocketRecvFrom(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr, int32 timeout)
+{
+    return OS_SocketRecvFromAbs(sock_id, buffer, buflen, RemoteAddr, OS_TimeFromRelativeMilliseconds(timeout));
 }
 
 /*----------------------------------------------------------------

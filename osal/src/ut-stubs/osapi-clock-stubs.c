@@ -25,8 +25,8 @@
 #include "osapi-clock.h"
 #include "utgenstub.h"
 
-extern void UT_DefaultHandler_OS_GetLocalTime(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SetLocalTime(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_GetLocalTime(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SetLocalTime(void *, UT_EntryKey_t, const UT_StubContext_t *);
 
 /*
  * ----------------------------------------------------
@@ -58,4 +58,36 @@ int32 OS_SetLocalTime(const OS_time_t *time_struct)
     UT_GenStub_Execute(OS_SetLocalTime, Basic, UT_DefaultHandler_OS_SetLocalTime);
 
     return UT_GenStub_GetReturnValue(OS_SetLocalTime, int32);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for OS_TimeFromRelativeMilliseconds()
+ * ----------------------------------------------------
+ */
+OS_time_t OS_TimeFromRelativeMilliseconds(int32 relative_msec)
+{
+    UT_GenStub_SetupReturnBuffer(OS_TimeFromRelativeMilliseconds, OS_time_t);
+
+    UT_GenStub_AddParam(OS_TimeFromRelativeMilliseconds, int32, relative_msec);
+
+    UT_GenStub_Execute(OS_TimeFromRelativeMilliseconds, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(OS_TimeFromRelativeMilliseconds, OS_time_t);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for OS_TimeToRelativeMilliseconds()
+ * ----------------------------------------------------
+ */
+int32 OS_TimeToRelativeMilliseconds(OS_time_t time)
+{
+    UT_GenStub_SetupReturnBuffer(OS_TimeToRelativeMilliseconds, int32);
+
+    UT_GenStub_AddParam(OS_TimeToRelativeMilliseconds, OS_time_t, time);
+
+    UT_GenStub_Execute(OS_TimeToRelativeMilliseconds, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(OS_TimeToRelativeMilliseconds, int32);
 }

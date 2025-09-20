@@ -25,15 +25,15 @@
 #include "osapi-sockets.h"
 #include "utgenstub.h"
 
-extern void UT_DefaultHandler_OS_SocketAddrFromString(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketAddrGetPort(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketAddrInit(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketAddrToString(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketGetIdByName(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketGetInfo(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketOpen(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketRecvFrom(void *, UT_EntryKey_t, const UT_StubContext_t *);
-extern void UT_DefaultHandler_OS_SocketSendTo(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketAddrFromString(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketAddrGetPort(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketAddrInit(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketAddrToString(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketGetIdByName(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketGetInfo(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketOpen(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketRecvFrom(void *, UT_EntryKey_t, const UT_StubContext_t *);
+void UT_DefaultHandler_OS_SocketSendTo(void *, UT_EntryKey_t, const UT_StubContext_t *);
 
 /*
  * ----------------------------------------------------
@@ -159,6 +159,23 @@ int32 OS_SocketBind(osal_id_t sock_id, const OS_SockAddr_t *Addr)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for OS_SocketBindAddress()
+ * ----------------------------------------------------
+ */
+int32 OS_SocketBindAddress(osal_id_t sock_id, const OS_SockAddr_t *Addr)
+{
+    UT_GenStub_SetupReturnBuffer(OS_SocketBindAddress, int32);
+
+    UT_GenStub_AddParam(OS_SocketBindAddress, osal_id_t, sock_id);
+    UT_GenStub_AddParam(OS_SocketBindAddress, const OS_SockAddr_t *, Addr);
+
+    UT_GenStub_Execute(OS_SocketBindAddress, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(OS_SocketBindAddress, int32);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for OS_SocketConnect()
  * ----------------------------------------------------
  */
@@ -211,6 +228,22 @@ int32 OS_SocketGetInfo(osal_id_t sock_id, OS_socket_prop_t *sock_prop)
 
 /*
  * ----------------------------------------------------
+ * Generated stub function for OS_SocketListen()
+ * ----------------------------------------------------
+ */
+int32 OS_SocketListen(osal_id_t sock_id)
+{
+    UT_GenStub_SetupReturnBuffer(OS_SocketListen, int32);
+
+    UT_GenStub_AddParam(OS_SocketListen, osal_id_t, sock_id);
+
+    UT_GenStub_Execute(OS_SocketListen, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(OS_SocketListen, int32);
+}
+
+/*
+ * ----------------------------------------------------
  * Generated stub function for OS_SocketOpen()
  * ----------------------------------------------------
  */
@@ -245,6 +278,27 @@ int32 OS_SocketRecvFrom(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockA
     UT_GenStub_Execute(OS_SocketRecvFrom, Basic, UT_DefaultHandler_OS_SocketRecvFrom);
 
     return UT_GenStub_GetReturnValue(OS_SocketRecvFrom, int32);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for OS_SocketRecvFromAbs()
+ * ----------------------------------------------------
+ */
+int32 OS_SocketRecvFromAbs(osal_id_t sock_id, void *buffer, size_t buflen, OS_SockAddr_t *RemoteAddr,
+                           OS_time_t abs_timeout)
+{
+    UT_GenStub_SetupReturnBuffer(OS_SocketRecvFromAbs, int32);
+
+    UT_GenStub_AddParam(OS_SocketRecvFromAbs, osal_id_t, sock_id);
+    UT_GenStub_AddParam(OS_SocketRecvFromAbs, void *, buffer);
+    UT_GenStub_AddParam(OS_SocketRecvFromAbs, size_t, buflen);
+    UT_GenStub_AddParam(OS_SocketRecvFromAbs, OS_SockAddr_t *, RemoteAddr);
+    UT_GenStub_AddParam(OS_SocketRecvFromAbs, OS_time_t, abs_timeout);
+
+    UT_GenStub_Execute(OS_SocketRecvFromAbs, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(OS_SocketRecvFromAbs, int32);
 }
 
 /*

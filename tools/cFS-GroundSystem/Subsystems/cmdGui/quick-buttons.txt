@@ -31,3 +31,5 @@ Time Services,              CFE_TIME_CMD,       Time No-Op,    0, 0x1805, LE, 12
 Event Services,             CFE_EVS_CMD,        EVS No-Op,     0, 0x1801, LE, 127.0.0.1, 1234, CFE_EVS_NOOP_CC
 Command Ingest,             CI_LAB_CMD,         CI No-Op,      0, 0x1884, LE, 127.0.0.1, 1234, CI_LAB_NOOP_CC
 Sample App,                 SAMPLE_APP_CMD,     Sample No-Op,  0, 0x1882, LE, 127.0.0.1, 1234, SAMPLE_APP_NOOP_CC
+Centurio Nav (SendHK),      CENTURIO_NAV_SENDHK, Send HK,      0, 0x1893, LE, 127.0.0.1, 1234, CENTURIO_NAV_SEND_HK_CC
+Centurio Nav (CMD),         CENTURIO_NAV_CMD,   Set Mode,      2, 0x1892, LE, 127.0.0.1, 1234, CENTURIO_NAV_SET_MODE_CC

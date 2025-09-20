@@ -50,15 +50,18 @@ void Test_MSG_Init(void)
     bool                       hassec;
     bool                       is_v1;
 
+    msgidval_exp = 1;
+    msgid_act    = CFE_SB_ValueToMsgId(msgidval_exp);
+
     UtPrintf("Bad parameter tests, Null pointer, invalid size, invalid msgid");
-    UtAssert_INT32_EQ(CFE_MSG_Init(NULL, CFE_SB_INVALID_MSG_ID, sizeof(cmd)), CFE_MSG_BAD_ARGUMENT);
-    UtAssert_INT32_EQ(CFE_MSG_Init(CFE_MSG_PTR(cmd), CFE_SB_INVALID_MSG_ID, 0), CFE_MSG_BAD_ARGUMENT);
-    UtAssert_INT32_EQ(
-        CFE_MSG_Init(CFE_MSG_PTR(cmd), CFE_SB_ValueToMsgId(CFE_PLATFORM_SB_HIGHEST_VALID_MSGID + 1), sizeof(cmd)),
-        CFE_MSG_BAD_ARGUMENT);
-    UtAssert_INT32_EQ(CFE_MSG_Init(CFE_MSG_PTR(cmd), CFE_SB_ValueToMsgId(-1), sizeof(cmd)), CFE_MSG_BAD_ARGUMENT);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_IsValidMsgId), true);
+    UtAssert_INT32_EQ(CFE_MSG_Init(NULL, msgid_act, sizeof(cmd)), CFE_MSG_BAD_ARGUMENT);
+    UtAssert_INT32_EQ(CFE_MSG_Init(CFE_MSG_PTR(cmd), msgid_act, 0), CFE_MSG_BAD_ARGUMENT);
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_IsValidMsgId), false);
+    UtAssert_INT32_EQ(CFE_MSG_Init(CFE_MSG_PTR(cmd), msgid_act, sizeof(cmd)), CFE_MSG_BAD_ARGUMENT);
 
     UtPrintf("Set to all F's, msgid value = 0");
+    UT_SetDefaultReturnValue(UT_KEY(CFE_SB_IsValidMsgId), true);
     memset(&cmd, 0xFF, sizeof(cmd));
     msgidval_exp = 0;
 
@@ -67,7 +70,7 @@ void Test_MSG_Init(void)
     CFE_UtAssert_SUCCESS(CFE_MSG_GetMsgId(CFE_MSG_PTR(cmd), &msgid_act));
     UtAssert_INT32_EQ(CFE_SB_MsgIdToValue(msgid_act), msgidval_exp);
     CFE_UtAssert_SUCCESS(CFE_MSG_GetSize(CFE_MSG_PTR(cmd), &size));
-    CFE_UtAssert_MEMOFFSET_EQ(size, sizeof(cmd));
+    UtAssert_EQ(size_t, size, sizeof(cmd));
     CFE_UtAssert_SUCCESS(CFE_MSG_GetSegmentationFlag(CFE_MSG_PTR(cmd), &segflag));
     UtAssert_INT32_EQ(segflag, CFE_MSG_SegFlag_Unsegmented);
 

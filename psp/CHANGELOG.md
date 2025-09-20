@@ -1,5 +1,69 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev73
+- 'Fix #443, Correct minor bugs + typos in the VxWorks layer'
+- See: <https://github.com/nasa/psp/pull/444>
+
+
+## Development Build: equuleus-rc1+dev67
+- 'Fix #452, rtems sysmom overflow buffer'
+- See: <https://github.com/nasa/psp/pull/453>
+
+
+## Development Build: equuleus-rc1:dev61
+- update PCS_malloc stub PoolSize overflow
+- Add rtems_sysmon unit test
+- See <https://github.com/nasa/PSP/pull/450> and <https://github.com/nasa/PSP/pull/448>
+
+## Development Build: equuleus-rc1+dev55
+- rename parameter in CFE_PSP_MemSet handler to align with stub and actual code
+- See <https://github.com/nasa/PSP/pull/441>
+
+## Development Build: equuleus-rc1+dev49
+- buffer error in the VxWorks sysmon module
+- add coverage tests for PSP modules
+- See <https://github.com/nasa/PSP/pull/439> and <https://github.com/nasa/PSP/pull/436>
+
+## Development Build: equuleus-rc1+dev42
+- Adds node20 compatible github actions
+- See <https://github.com/nasa/PSP/pull/430>
+
+## Development Build: equuleus-rc1+dev38
+- updating PSP to use new versioning system
+- conditional module inclusion
+- See <https://github.com/nasa/PSP/pull/422> and <https://github.com/nasa/PSP/pull/427>
+
+## Development Build: v1.6.0-rc4+dev117
+- Align mismatched function prototype/implem. parameter names
+- See <https://github.com/nasa/PSP/pull/380>
+
+## Development Build: v1.6.0-rc4+dev102
+- malloc stub memalign calculation
+- See <https://github.com/nasa/PSP/pull/419>
+
+## Development Build: v1.6.0-rc4+dev96
+- update rtems_sysmon banner
+- unit test for vxworks sysmon
+- See <https://github.com/nasa/PSP/pull/406> and <https://github.com/nasa/PSP/pull/410>
+
+## Development Build: v1.6.0-rc4+dev90
+- RTEMS.cmake: add quotes around ${RTEMS_BSP_C_FLAGS}.
+- Fixes errors in IC Bundle workflow file
+- See <https://github.com/nasa/PSP/pull/395> and <https://github.com/nasa/PSP/pull/400>
+
+## Development Build: v1.6.0-rc4+dev82
+- Implement RTEMS Sysmons
+- find psp standard module
+- See <https://github.com/nasa/PSP/pull/397> and <https://github.com/nasa/PSP/pull/402>
+
+## Development Build: v1.6.0-rc4+dev76
+- Create Workflow for IC Bundle Generation
+- See <https://github.com/nasa/PSP/pull/391>
+
+## Development Build: v1.6.0-rc4+dev72
+- adds generic driver interface and Linux sysmon module
+- See <https://github.com/nasa/PSP/pull/386>
+
 ## Development Build: v1.6.0-rc4+dev67
 - Squash constParameter warning in linux cfe_psp_memory.c
 - Remove obsolete _USING_RTEMS_INCLUDES_

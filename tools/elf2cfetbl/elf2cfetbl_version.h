@@ -28,16 +28,22 @@
 /*
  * Development Build Macro Definitions
  */
-#define ELF2CFETBL_BUILD_NUMBER 30 /*!< @brief Number of commits since baseline */
-#define ELF2CFETBL_BUILD_BASELINE \
-    "v3.3.0-rc4" /*!< @brief Development Build: git tag that is the base for the current */
+#define ELF2CFETBL_BUILD_NUMBER     22 /*!< @brief Number of commits since baseline */
+#define ELF2CFETBL_BUILD_BASELINE   "equuleues-rc1" /*!< @brief Development Build: git tag that is the base for the current */
+#define ELF2CFETBL_BUILD_DEV_CYCLE  "equuleus-rc2" /**< @brief Development: Release name for current development cycle */
+#define ELF2CFETBL_BUILD_CODENAME   "Equuleus" /**< @brief: Development: Code name for the current build */
 
 /*
  * Version Macros, see \ref cfsversions for definitions.
  */
 #define ELF2CFETBL_MAJOR_VERSION 3  /*!< @brief Major version number */
 #define ELF2CFETBL_MINOR_VERSION 1  /*!< @brief Minor version number */
-#define ELF2CFETBL_REVISION      99 /*!< @brief Revision version number. Value of 99 indicates a development version.*/
+#define ELF2CFETBL_REVISION      0  /*!< @brief Revision version number. Value of 0 indicates a development version.*/
+
+/**
+ * @brief Last official release.
+ */
+#define ELF2CFETBL_LAST_OFFICIAL "v3.1.0"
 
 /*!
  * @brief Mission revision.
@@ -61,13 +67,12 @@
  */
 #define ELF2CFETBL_VERSION ELF2CFETBL_BUILD_BASELINE ELF2CFETBL_STR(ELF2CFETBL_BUILD_NUMBER)
 
-/*! @brief Development Build Version String.
- * @details Reports the current development build's baseline, number, and name. Also includes a note about the latest
- * official version. @n See @ref cfsversions for format differences between development and release versions.
+/**
+ * @brief Max Version String length.
+ * 
+ * Maximum length that an elf2cfetbl version string can be.
+ * 
  */
-#define ELF2CFETBL_VERSION_STRING                                                        \
-    " elf2cfetbl Development Build\n"                                                    \
-    " " ELF2CFETBL_VERSION " (Codename: Draco)\n" /* Codename for current development */ \
-    " Last Official Release: elf2cfetbl v3.1.0"   /* For full support please use official release version */
+#define ELF2CFETBL_CFG_MAX_VERSION_STR_LEN 256
 
 #endif /* ELF2CFETBL_VERSION_H */

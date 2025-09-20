@@ -88,62 +88,72 @@ CFE_ES_GMP_IndirectBuffer_t UT_MemPoolIndirectBuffer;
 /* Create a startup script buffer for a maximum of 5 lines * 80 chars/line */
 char StartupScript[MAX_STARTUP_SCRIPT];
 
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_NOOP_CC = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID),
-                                                                   .CommandCode = CFE_ES_NOOP_CC};
+/* Normal dispatching registers the MsgID+CC in order to follow a
+ * certain path through a series of switch statements */
+#define ES_UT_MID_DISPATCH(intf) \
+    .Method = UT_TaskPipeDispatchMethod_MSG_ID_CC, .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_##intf##_MID)
 
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESET_COUNTERS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_RESET_COUNTERS_CC};
+#define ES_UT_MSG_DISPATCH(intf, cmd)       ES_UT_MID_DISPATCH(intf), UT_TPD_SETSIZE(CFE_ES_##cmd)
+#define ES_UT_CC_DISPATCH(intf, cc, cmd)    ES_UT_MSG_DISPATCH(intf, cmd), UT_TPD_SETCC(cc)
+#define ES_UT_ERROR_DISPATCH(intf, cc, err) ES_UT_MID_DISPATCH(intf), UT_TPD_SETCC(cc), UT_TPD_SETERR(err)
 
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESTART_CC = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID),
-                                                                      .CommandCode = CFE_ES_RESTART_CC};
-
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_START_APP_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_START_APP_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_STOP_APP_CC = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID),
-                                                                       .CommandCode = CFE_ES_STOP_APP_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESTART_APP_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_RESTART_APP_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RELOAD_APP_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_RELOAD_APP_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ONE_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_QUERY_ONE_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ALL_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_QUERY_ALL_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_QUERY_ALL_TASKS_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_CLEAR_SYSLOG_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_CLEAR_SYSLOG_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_WRITE_SYSLOG_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_OVER_WRITE_SYSLOG_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_CLEAR_ER_LOG_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_CLEAR_ER_LOG_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_WRITE_ER_LOG_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_START_PERF_DATA_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_STOP_PERF_DATA_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_SET_PERF_FILTER_MASK_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_SET_PERF_TRIGGER_MASK_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_RESET_PR_COUNT_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_MAX_PR_COUNT_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_SET_MAX_PR_COUNT_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_DELETE_CDS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_DELETE_CDS_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_SEND_MEM_POOL_STATS_CC};
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC = {
-    .MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID), .CommandCode = CFE_ES_DUMP_CDS_REGISTRY_CC};
-
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_INVALID_CC = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_CMD_MID),
-                                                                      .CommandCode = CFE_ES_DUMP_CDS_REGISTRY_CC + 2};
-
-static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_SEND_HK = {.MsgId = CFE_SB_MSGID_WRAP_VALUE(CFE_ES_SEND_HK_MID)};
+/* NOTE: Automatic formatting of this table tends to make it harder to read. */
+/* clang-format off */
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_NOOP_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_NOOP_CC, NoopCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESET_COUNTERS_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_RESET_COUNTERS_CC, ResetCountersCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESTART_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_RESTART_CC, RestartCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_START_APP_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_START_APP_CC, StartAppCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_STOP_APP_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_STOP_APP_CC, StopAppCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESTART_APP_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_RESTART_APP_CC, RestartAppCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RELOAD_APP_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_RELOAD_APP_CC, ReloadAppCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ONE_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_QUERY_ONE_CC, QueryOneCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ALL_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_QUERY_ALL_CC, QueryAllCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_QUERY_ALL_TASKS_CC, QueryAllTasksCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_CLEAR_SYS_LOG_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_CLEAR_SYS_LOG_CC, ClearSysLogCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_WRITE_SYS_LOG_CC, WriteSysLogCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_OVER_WRITE_SYS_LOG_CC, OverWriteSysLogCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_CLEAR_ER_LOG_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_CLEAR_ER_LOG_CC, ClearERLogCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_WRITE_ER_LOG_CC, WriteERLogCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_START_PERF_DATA_CC, StartPerfDataCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_STOP_PERF_DATA_CC, StopPerfDataCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_SET_PERF_FILTER_MASK_CC, SetPerfFilterMaskCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_SET_PERF_TRIGGER_MASK_CC, SetPerfTriggerMaskCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_RESET_PR_COUNT_CC, ResetPRCountCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SET_MAX_PR_COUNT_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_SET_MAX_PR_COUNT_CC, SetMaxPRCountCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_DELETE_CDS_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_DELETE_CDS_CC, DeleteCDSCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_SEND_MEM_POOL_STATS_CC, SendMemPoolStatsCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC =
+    { ES_UT_CC_DISPATCH(CMD, CFE_ES_DUMP_CDS_REGISTRY_CC, DumpCDSRegistryCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_SEND_HK =
+    { ES_UT_MSG_DISPATCH(SEND_HK, SendHkCmd) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_INVALID_LENGTH =
+    { ES_UT_ERROR_DISPATCH(CMD, 0, CFE_STATUS_WRONG_MSG_LENGTH) };
+static const UT_TaskPipeDispatchId_t UT_TPID_CFE_ES_CMD_INVALID_CC =
+    { ES_UT_ERROR_DISPATCH(CMD, -1, CFE_STATUS_BAD_COMMAND_CODE) };
+/* clang-format on */
 
 /*
 ** Functions
@@ -460,7 +470,7 @@ void ES_UT_SetupMemPoolId(CFE_ES_MemPoolRecord_t **OutPoolRecPtr)
     }
 }
 
-void ES_UT_SetupCDSGlobal(uint32 CDS_Size)
+void ES_UT_SetupCDSGlobal(size_t CDS_Size)
 {
     CFE_ES_CDS_Instance_t *CDS = &CFE_ES_Global.CDSVars;
 
@@ -1135,7 +1145,7 @@ static void ES_UT_Config_IterateAll(void *UserObj, UT_EntryKey_t FuncKey, const 
 
 void TestApps(void)
 {
-    int                     NumBytes;
+    size_t                  NumBytes;
     CFE_ES_AppInfo_t        AppInfo;
     CFE_ES_AppId_t          AppId;
     CFE_ES_TaskId_t         TaskId;
@@ -2109,7 +2119,7 @@ void TestERLog(void)
 
     UT_SetDeferredRetcode(UT_KEY(CFE_PSP_Exception_CopyContext), 1, 128);
     UtAssert_BOOL_FALSE(CFE_ES_BackgroundERLogFileDataGetter(&State, 0, &LocalBuffer, &LocalBufSize));
-    CFE_UtAssert_MEMOFFSET_EQ(State.EntryBuffer.ContextSize, 128);
+    UtAssert_UINT32_EQ(State.EntryBuffer.ContextSize, 128);
     UtAssert_NOT_NULL(LocalBuffer);
     UtAssert_NONZERO(LocalBufSize);
 
@@ -2208,7 +2218,7 @@ void TestGenericPool(void)
 
     /* Free a buffer and attempt to reallocate */
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolPutBlock(&Pool1, &BlockSize, Offset2));
-    CFE_UtAssert_MEMOFFSET_EQ(BlockSize, 72);
+    UtAssert_EQ(size_t, BlockSize, 72);
 
     /* Should not be able to free more than once */
     /* This should increment the validation error count */
@@ -2217,7 +2227,7 @@ void TestGenericPool(void)
     UtAssert_NONZERO(Pool1.ValidationErrorCount);
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool1, &Offset4, 100));
-    CFE_UtAssert_MEMOFFSET_EQ(Offset4, Offset2);
+    UtAssert_EQ(size_t, Offset4, Offset2);
 
     /* Attempt Bigger than the largest bucket */
     UtAssert_INT32_EQ(CFE_ES_GenPoolGetBlock(&Pool1, &Offset1, 1000), CFE_ES_ERR_MEM_BLOCK_SIZE);
@@ -2235,9 +2245,9 @@ void TestGenericPool(void)
     UtAssert_VOIDCALL(CFE_ES_GenPoolGetBucketUsage(&Pool1, Pool1.NumBuckets + 1, &BlockStats));
 
     /* Check various outputs to ensure correctness */
-    CFE_UtAssert_MEMOFFSET_EQ(TotalSize, OffsetEnd);
+    UtAssert_EQ(size_t, CFE_ES_MEMOFFSET_TO_SIZET(TotalSize), OffsetEnd);
     UtAssert_UINT32_EQ(CountBuf, 3);
-    UtAssert_NONZERO(FreeSize);
+    UtAssert_NONZERO(CFE_ES_MEMOFFSET_TO_SIZET(FreeSize));
 
     /* put blocks so the pool has a mixture of allocated and deallocated blocks */
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolPutBlock(&Pool1, &BlockSize, Offset1));
@@ -2251,7 +2261,7 @@ void TestGenericPool(void)
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolRebuild(&Pool2));
 
     /* After rebuilding, Pool2 should have similar state data to Pool1. */
-    CFE_UtAssert_MEMOFFSET_EQ(Pool1.TailPosition, Pool2.TailPosition);
+    UtAssert_EQ(size_t, Pool1.TailPosition, Pool2.TailPosition);
     UtAssert_UINT32_EQ(Pool1.AllocationCount, Pool2.AllocationCount);
 
     for (i = 0; i < Pool1.NumBuckets; ++i)
@@ -2270,10 +2280,10 @@ void TestGenericPool(void)
     /* Get blocks again, from the recovered pool, to demonstrate that
      * the pool is functional after recovery. */
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset3, 44));
-    CFE_UtAssert_MEMOFFSET_EQ(Offset3, Offset1);
+    UtAssert_EQ(size_t, Offset3, Offset1);
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset4, 72));
-    CFE_UtAssert_MEMOFFSET_EQ(Offset4, Offset2);
+    UtAssert_EQ(size_t, Offset4, Offset2);
 
     /* Test successfully creating indirect memory pool, no alignment, with mutex */
     memset(&UT_MemPoolIndirectBuffer, 0xee, sizeof(UT_MemPoolIndirectBuffer));
@@ -2287,19 +2297,19 @@ void TestGenericPool(void)
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset1, 1));
 
     /* With no alignment adjustments, the result offset should be exactly matching */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset1, 2 + sizeof(CFE_ES_GenPoolBD_t));
+    UtAssert_EQ(size_t, Offset1, 2 + sizeof(CFE_ES_GenPoolBD_t));
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset2, 55));
     /* the previous block should be 4 in size (smallest block) */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset2, Offset1 + 4 + sizeof(CFE_ES_GenPoolBD_t));
+    UtAssert_EQ(size_t, Offset2, Offset1 + 4 + sizeof(CFE_ES_GenPoolBD_t));
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset3, 15));
     /* the previous block should be 56 in size */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset3, Offset2 + 56 + sizeof(CFE_ES_GenPoolBD_t));
+    UtAssert_EQ(size_t, Offset3, Offset2 + 56 + sizeof(CFE_ES_GenPoolBD_t));
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset4, 54));
     /* the previous block should be 16 in size */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset4, Offset3 + 16 + sizeof(CFE_ES_GenPoolBD_t));
+    UtAssert_EQ(size_t, Offset4, Offset3 + 16 + sizeof(CFE_ES_GenPoolBD_t));
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolPutBlock(&Pool2, &BlockSize, Offset1));
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolPutBlock(&Pool2, &BlockSize, Offset2));
@@ -2308,12 +2318,12 @@ void TestGenericPool(void)
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset1, 56));
 
     /* should re-issue previous block */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset4, Offset1);
+    UtAssert_EQ(size_t, Offset4, Offset1);
 
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolGetBlock(&Pool2, &Offset3, 56));
 
     /* should re-issue previous block */
-    CFE_UtAssert_MEMOFFSET_EQ(Offset3, Offset2);
+    UtAssert_EQ(size_t, Offset3, Offset2);
 
     /* Getting another will fail, despite being enough space,
      * because its now fragmented. */
@@ -2346,8 +2356,8 @@ void TestGenericPool(void)
     CFE_ES_GenPoolGetCounts(&Pool1, &NumBlocks, &CountBuf, &ErrBuf);
 
     /* Check various outputs to ensure correctness */
-    CFE_UtAssert_MEMOFFSET_EQ(TotalSize, OffsetEnd);
-    CFE_UtAssert_MEMOFFSET_EQ(FreeSize, 0);
+    UtAssert_EQ(size_t, CFE_ES_MEMOFFSET_TO_SIZET(TotalSize), OffsetEnd);
+    UtAssert_ZERO(CFE_ES_MEMOFFSET_TO_SIZET(FreeSize));
     UtAssert_UINT32_EQ(CountBuf, 2);
 
     /*
@@ -2457,6 +2467,15 @@ void TestGenericPool(void)
     /* Reset the structure so it will rebuild */
     Pool1.TailPosition = 0;
     CFE_UtAssert_SUCCESS(CFE_ES_GenPoolRebuild(&Pool1));
+
+    /* Branch coverage for no buffer in pool */
+    ES_ResetUnitTest();
+    UtAssert_INT32_EQ(CFE_ES_GenPoolCreatePoolBlock(&Pool1, 0, Pool1.Buckets[0].BlockSize, &Offset1),
+                      CFE_ES_BUFFER_NOT_IN_POOL);
+
+    ES_ResetUnitTest();
+    UtAssert_INT32_EQ(CFE_ES_GenPoolRecyclePoolBlock(&Pool1, 0, Pool1.Buckets[0].BlockSize, &Offset1),
+                      CFE_ES_BUFFER_NOT_IN_POOL);
 }
 
 void TestTask(void)
@@ -2589,23 +2608,23 @@ void TestTask(void)
 
     /* Test a successful HK request */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.SendHkCmd), UT_TPID_CFE_ES_SEND_HK);
-    UtAssert_NONZERO(CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.SendHkCmd), UT_TPID_CFE_ES_SEND_HK);
+    UtAssert_NONZERO(CFE_ES_MEMOFFSET_TO_SIZET(CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree));
 
     /* Test the HK request with a get heap failure */
     ES_ResetUnitTest();
     UT_SetDeferredRetcode(UT_KEY(OS_HeapGetInfo), 1, -1);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.SendHkCmd), UT_TPID_CFE_ES_SEND_HK);
-    UtAssert_ZERO(CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.SendHkCmd), UT_TPID_CFE_ES_SEND_HK);
+    UtAssert_ZERO(CFE_ES_MEMOFFSET_TO_SIZET(CFE_ES_Global.TaskData.HkPacket.Payload.HeapBytesFree));
 
     /* Test successful no-op command */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_NOOP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_NOOP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_NOOP_INF_EID);
 
     /* Test successful reset counters command */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ResetCountersCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ResetCountersCmd),
                     UT_TPID_CFE_ES_CMD_RESET_COUNTERS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESET_INF_EID);
 
@@ -2614,14 +2633,14 @@ void TestTask(void)
     CFE_ES_Global.ResetDataPtr->ResetVars.ProcessorResetCount = 0;
     CmdBuf.RestartCmd.Payload.RestartType                     = CFE_PSP_RST_TYPE_PROCESSOR;
     UT_SetDataBuffer(UT_KEY(CFE_PSP_Restart), &ResetType, sizeof(ResetType), false);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
     UtAssert_UINT32_EQ(ResetType, CFE_PSP_RST_TYPE_PROCESSOR);
     UtAssert_STUB_COUNT(CFE_PSP_Restart, 1);
 
     /* Test cFE restart with bad restart type */
     ES_ResetUnitTest();
     CmdBuf.RestartCmd.Payload.RestartType = 4524;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_BOOT_ERR_EID);
 
     /* Test successful app create */
@@ -2637,13 +2656,13 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                        = 160;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(8192);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_INF_EID);
 
     /* Test app create with an OS task create failure */
     ES_ResetUnitTest();
     UT_SetDefaultReturnValue(UT_KEY(OS_TaskCreate), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_ERR_EID);
 
     /* Test app create with an invalid file name */
@@ -2660,7 +2679,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(12096);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_INVALID_FILENAME_ERR_EID);
 
     /* Test app create with a null application entry point */
@@ -2674,7 +2693,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                        = 160;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(12096);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_INVALID_ENTRY_POINT_ERR_EID);
 
     /* Test app create with a null application name */
@@ -2689,7 +2708,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                            = 160;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(12096);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_NULL_APP_NAME_ERR_EID);
 
     /* Test app create with with an invalid exception action */
@@ -2705,7 +2724,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                        = 160;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(12096);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = 255;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_EXC_ACTION_ERR_EID);
 
     /* Test app create with a default stack size */
@@ -2721,7 +2740,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                        = 160;
     CmdBuf.StartAppCmd.Payload.StackSize                                                       = CFE_ES_MEMOFFSET_C(0);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_INF_EID);
 
     /* Test app create with a bad priority */
@@ -2737,7 +2756,7 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.Priority                                                        = 1000;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(12096);
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_RESTART_APP;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_PRIORITY_ERR_EID);
 
     /* Test successful app stop */
@@ -2745,13 +2764,13 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_EXTERNAL, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.StopAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.StopAppCmd.Payload.Application) - 1);
     CmdBuf.StopAppCmd.Payload.Application[sizeof(CmdBuf.StopAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_STOP_DBG_EID);
 
     /* Test app stop failure */
     ES_ResetUnitTest();
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_WAITING, "CFE_ES", NULL, NULL);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_STOP_ERR1_EID);
 
     /* Test app stop with a bad app name */
@@ -2759,7 +2778,7 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     strncpy(CmdBuf.StopAppCmd.Payload.Application, "BAD_APP_NAME", sizeof(CmdBuf.StopAppCmd.Payload.Application) - 1);
     CmdBuf.StopAppCmd.Payload.Application[sizeof(CmdBuf.StopAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StopAppCmd), UT_TPID_CFE_ES_CMD_STOP_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_STOP_ERR2_EID);
 
     /* Test successful app restart */
@@ -2768,7 +2787,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_EXTERNAL, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.RestartAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1);
     CmdBuf.RestartAppCmd.Payload.Application[sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartAppCmd), UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartAppCmd),
+                    UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESTART_APP_DBG_EID);
 
     /* Test app restart with failed file check */
@@ -2778,7 +2798,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_EXTERNAL, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.RestartAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.RestartAppCmd.Payload.Application));
     CmdBuf.RestartAppCmd.Payload.Application[sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartAppCmd), UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartAppCmd),
+                    UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESTART_APP_ERR1_EID);
 
     /* Test app restart with a bad app name */
@@ -2787,7 +2808,8 @@ void TestTask(void)
     strncpy(CmdBuf.RestartAppCmd.Payload.Application, "BAD_APP_NAME",
             sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1);
     CmdBuf.RestartAppCmd.Payload.Application[sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartAppCmd), UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartAppCmd),
+                    UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESTART_APP_ERR2_EID);
 
     /* Test failed app restart, core app */
@@ -2796,7 +2818,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.RestartAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1);
     CmdBuf.RestartAppCmd.Payload.Application[sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartAppCmd), UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartAppCmd),
+                    UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESTART_APP_ERR1_EID);
 
     /* Test failed app restart, not running */
@@ -2805,7 +2828,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_EXTERNAL, CFE_ES_AppState_WAITING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.RestartAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.RestartAppCmd.Payload.Application));
     CmdBuf.RestartAppCmd.Payload.Application[sizeof(CmdBuf.RestartAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartAppCmd), UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartAppCmd),
+                    UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESTART_APP_ERR1_EID);
 
     /* Test successful app reload */
@@ -2816,7 +2840,8 @@ void TestTask(void)
     CmdBuf.ReloadAppCmd.Payload.AppFileName[sizeof(CmdBuf.ReloadAppCmd.Payload.AppFileName) - 1] = '\0';
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1);
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_DBG_EID);
 
     /* Test app reload with filename parse error */
@@ -2826,7 +2851,8 @@ void TestTask(void)
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1);
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_ERR1_EID);
 
     /* Test app reload with missing file */
@@ -2838,7 +2864,8 @@ void TestTask(void)
     CmdBuf.ReloadAppCmd.Payload.AppFileName[sizeof(CmdBuf.ReloadAppCmd.Payload.AppFileName) - 1] = '\0';
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.ReloadAppCmd.Payload.Application));
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_ERR1_EID);
 
     /* Test app reload with a bad app name */
@@ -2847,7 +2874,8 @@ void TestTask(void)
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "BAD_APP_NAME",
             sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1);
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_ERR2_EID);
 
     /* Test failed app reload, core app */
@@ -2856,7 +2884,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.ReloadAppCmd.Payload.Application));
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_ERR1_EID);
 
     /* Test failed app reload, not RUNNING */
@@ -2865,7 +2894,8 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_EXTERNAL, CFE_ES_AppState_WAITING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.ReloadAppCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.ReloadAppCmd.Payload.Application));
     CmdBuf.ReloadAppCmd.Payload.Application[sizeof(CmdBuf.ReloadAppCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ReloadAppCmd), UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ReloadAppCmd),
+                    UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RELOAD_APP_ERR1_EID);
 
     /* Test successful telemetry packet request for single app data */
@@ -2874,7 +2904,7 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_WAITING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.QueryOneCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1);
     CmdBuf.QueryOneCmd.Payload.Application[sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ONE_APP_EID);
 
     /* Test telemetry packet request for single app data with send message failure */
@@ -2884,7 +2914,7 @@ void TestTask(void)
     strncpy(CmdBuf.QueryOneCmd.Payload.Application, "CFE_ES", sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1);
     CmdBuf.QueryOneCmd.Payload.Application[sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1] = '\0';
     UT_SetDeferredRetcode(UT_KEY(CFE_SB_TransmitMsg), 1, -1);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ONE_ERR_EID);
 
     /* Test telemetry packet request for single app data with a bad app name */
@@ -2893,7 +2923,7 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.QueryOneCmd.Payload.Application, "BAD_APP_NAME", sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1);
     CmdBuf.QueryOneCmd.Payload.Application[sizeof(CmdBuf.QueryOneCmd.Payload.Application) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryOneCmd), UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ONE_APPID_ERR_EID);
 
     /* Test successful write of all app data to file */
@@ -2902,7 +2932,7 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     strncpy(CmdBuf.QueryAllCmd.Payload.FileName, "AllFilename", sizeof(CmdBuf.QueryAllCmd.Payload.FileName) - 1);
     CmdBuf.QueryAllCmd.Payload.FileName[sizeof(CmdBuf.QueryAllCmd.Payload.FileName) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ALL_APPS_EID);
 
     /* Test Query tasks command with valid lib ID */
@@ -2910,27 +2940,27 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     CFE_ES_Global.LibTable[0].LibId = CFE_ES_LIBID_C(ES_UT_MakeLibIdForIndex(1));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ALL_APPS_EID);
 
     /* Test write of all app data to file with a null file name */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ALL_APPS_EID);
 
     /* Test write of all app data to file with a bad file name */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_OSCREATE_ERR_EID);
 
     /* Test write of all app data to file with a write header failure */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_WriteHeader), 1, OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_WRHDR_ERR_EID);
 
     /* Test write of all app data to file with a file write failure */
@@ -2938,7 +2968,7 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     UT_SetDefaultReturnValue(UT_KEY(OS_write), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKWR_ERR_EID);
 
     /* Test write of all app data to file with a file create failure */
@@ -2946,14 +2976,14 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
     UT_SetDefaultReturnValue(UT_KEY(OS_OpenCreate), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllCmd), UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_OSCREATE_ERR_EID);
 
     /* Test successful write of all task data to a file */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_EID);
 
@@ -2963,7 +2993,7 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, &UtTaskRecPtr);
     TaskId = CFE_ES_TaskRecordGetID(UtTaskRecPtr);
     UT_SetHandlerFunction(UT_KEY(CFE_FS_InitHeader), ES_UT_UnusedAppTask, &TaskId);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_EID);
 
@@ -2971,7 +3001,7 @@ void TestTask(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_OSCREATE_ERR_EID);
 
@@ -2981,7 +3011,7 @@ void TestTask(void)
     strncpy(CmdBuf.QueryAllTasksCmd.Payload.FileName, "filename", sizeof(CmdBuf.QueryAllTasksCmd.Payload.FileName) - 1);
     CmdBuf.QueryAllTasksCmd.Payload.FileName[sizeof(CmdBuf.QueryAllTasksCmd.Payload.FileName) - 1] = '\0';
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_WriteHeader), 1, -1);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_WRHDR_ERR_EID);
 
@@ -2990,7 +3020,7 @@ void TestTask(void)
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "UT", NULL, NULL);
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(OS_write), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_WR_ERR_EID);
 
@@ -2998,38 +3028,39 @@ void TestTask(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(OS_OpenCreate), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.QueryAllTasksCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.QueryAllTasksCmd),
                     UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TASKINFO_OSCREATE_ERR_EID);
 
     /* Test successful clearing of the system log */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ClearSysLogCmd), UT_TPID_CFE_ES_CMD_CLEAR_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ClearSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_CLEAR_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOG1_INF_EID);
 
     /* Test successful overwriting of the system log using overwrite mode */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.OverwriteSysLogCmd.Payload.Mode = CFE_ES_LogMode_OVERWRITE;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.OverwriteSysLogCmd),
-                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.OverwriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOGMODE_EID);
 
     /* Test successful overwriting of the system log using discard mode */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.OverwriteSysLogCmd.Payload.Mode = CFE_ES_LogMode_DISCARD;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.OverwriteSysLogCmd),
-                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.OverwriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOGMODE_EID);
 
     /* Test overwriting the system log using an invalid mode */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.OverwriteSysLogCmd.Payload.Mode = 255;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.OverwriteSysLogCmd),
-                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.OverwriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ERR_SYSLOGMODE_EID);
 
     /* Test successful writing of the system log */
@@ -3038,21 +3069,24 @@ void TestTask(void)
     strncpy(CmdBuf.WriteSysLogCmd.Payload.FileName, "filename", sizeof(CmdBuf.WriteSysLogCmd.Payload.FileName) - 1);
     CmdBuf.WriteSysLogCmd.Payload.FileName[sizeof(CmdBuf.WriteSysLogCmd.Payload.FileName) - 1] = '\0';
     CFE_ES_Global.TaskData.HkPacket.Payload.SysLogEntries                                      = 123;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOG2_EID);
 
     /* Test writing the system log using a bad file name */
     ES_ResetUnitTest();
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOG2_ERR_EID);
 
     /* Test writing the system log using a null file name */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.WriteSysLogCmd.Payload.FileName[0] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOG2_EID);
 
     /* Test writing the system log with an OS create failure */
@@ -3060,7 +3094,8 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(OS_OpenCreate), OS_ERROR);
     CmdBuf.WriteSysLogCmd.Payload.FileName[0] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOG2_ERR_EID);
 
     /* Test writing the system log with an OS write failure */
@@ -3072,19 +3107,22 @@ void TestTask(void)
                  "0000-000-00:00:00.00000 Test Message\n");
     CFE_ES_Global.ResetDataPtr->SystemLogEndIdx = CFE_ES_Global.ResetDataPtr->SystemLogWriteIdx;
     CmdBuf.WriteSysLogCmd.Payload.FileName[0]   = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_FILEWRITE_ERR_EID);
 
     /* Test writing the system log with a write header failure */
     ES_ResetUnitTest();
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_WriteHeader), 1, OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteSysLogCmd), UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_FILEWRITE_ERR_EID);
 
     /* Test successful clearing of the E&R log */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ClearERLogCmd), UT_TPID_CFE_ES_CMD_CLEAR_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ClearERLogCmd),
+                    UT_TPID_CFE_ES_CMD_CLEAR_ER_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ERLOG1_INF_EID);
 
     /* Test successful writing of the E&R log */
@@ -3095,26 +3133,30 @@ void TestTask(void)
     strncpy(CmdBuf.WriteERLogCmd.Payload.FileName, "filename", sizeof(CmdBuf.WriteERLogCmd.Payload.FileName) - 1);
     CmdBuf.WriteERLogCmd.Payload.FileName[sizeof(CmdBuf.WriteERLogCmd.Payload.FileName) - 1] = '\0';
     UT_SetDefaultReturnValue(UT_KEY(CFE_FS_BackgroundFileDumpIsPending), false);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteERLogCmd), UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteERLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
     UtAssert_STUB_COUNT(CFE_FS_BackgroundFileDumpRequest, 1);
     CFE_UtAssert_EVENTCOUNT(0);
 
     /* Failure of parsing the file name */
     UT_ClearEventHistory();
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteERLogCmd), UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteERLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ERLOG2_ERR_EID);
 
     /* Failure from CFE_FS_BackgroundFileDumpRequest() should send the pending error event ID */
     UT_ClearEventHistory();
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_BackgroundFileDumpRequest), 1, CFE_STATUS_REQUEST_ALREADY_PENDING);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteERLogCmd), UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteERLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ERLOG_PENDING_ERR_EID);
 
     /* Same event but pending locally */
     UT_ClearEventHistory();
     UT_SetDefaultReturnValue(UT_KEY(CFE_FS_BackgroundFileDumpIsPending), true);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.WriteERLogCmd), UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.WriteERLogCmd),
+                    UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_ERLOG_PENDING_ERR_EID);
 
     /* Test scan for exceptions in the PSP, should invoke a Processor Reset */
@@ -3216,20 +3258,21 @@ void TestTask(void)
      * length call
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_CLEAR_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_INVALID_LENGTH);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test resetting and setting the max for the processor reset count */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.ResetPRCountCmd), UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.ResetPRCountCmd),
+                    UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_RESET_PR_COUNT_EID);
 
     /* Test setting the maximum processor reset count */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.SetMaxPRCountCmd.Payload.MaxPRCount = 3;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.SetMaxPRCountCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.SetMaxPRCountCmd),
                     UT_TPID_CFE_ES_CMD_SET_MAX_PR_COUNT_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SET_MAX_PR_COUNT_EID);
 
@@ -3240,14 +3283,16 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     strncpy(CmdBuf.DeleteCDSCmd.Payload.CdsName, "CFE_ES.CDS_NAME", sizeof(CmdBuf.DeleteCDSCmd.Payload.CdsName) - 1);
     CmdBuf.DeleteCDSCmd.Payload.CdsName[sizeof(CmdBuf.DeleteCDSCmd.Payload.CdsName) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DeleteCDSCmd), UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DeleteCDSCmd),
+                    UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_DELETE_ERR_EID);
 
     /* Test failed deletion of specified critical table CDS */
     /* NOTE - reuse command from previous test */
     ES_ResetUnitTest();
     ES_UT_SetupSingleCDSRegistry("CFE_ES.CDS_NAME", ES_UT_CDS_BLOCK_SIZE, true, NULL);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DeleteCDSCmd), UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DeleteCDSCmd),
+                    UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_DELETE_TBL_ERR_EID);
 
     /* Test successful deletion of a specified CDS */
@@ -3256,14 +3301,16 @@ void TestTask(void)
     ES_UT_SetupSingleCDSRegistry("CFE_ES.CDS_NAME", ES_UT_CDS_BLOCK_SIZE, false, NULL);
 
     /* Set up the block to read what we need to from the CDS */
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DeleteCDSCmd), UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DeleteCDSCmd),
+                    UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_DELETED_INFO_EID);
 
     /* Test deletion of a specified CDS with the owning app being active */
     ES_ResetUnitTest();
     ES_UT_SetupSingleCDSRegistry("CFE_ES.CDS_NAME", ES_UT_CDS_BLOCK_SIZE, false, NULL);
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_ES", NULL, NULL);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DeleteCDSCmd), UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DeleteCDSCmd),
+                    UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_OWNER_ACTIVE_EID);
 
     /* Test deletion of a specified CDS with the name not found */
@@ -3271,13 +3318,14 @@ void TestTask(void)
     ES_UT_SetupSingleCDSRegistry("CFE_ES.CDS_NAME", ES_UT_CDS_BLOCK_SIZE, false, &UtCDSRegRecPtr);
     ES_UT_SetupSingleAppId(CFE_ES_AppType_CORE, CFE_ES_AppState_RUNNING, "CFE_BAD", NULL, NULL);
     CFE_ES_CDSBlockRecordSetFree(UtCDSRegRecPtr);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DeleteCDSCmd), UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DeleteCDSCmd),
+                    UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_NAME_ERR_EID);
 
     /* Test successful dump of CDS to file using the default dump file name */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_REG_DUMP_INF_EID);
 
@@ -3285,7 +3333,7 @@ void TestTask(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_ParseInputFileNameEx), 1, CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CREATING_CDS_DUMP_ERR_EID);
 
@@ -3293,7 +3341,7 @@ void TestTask(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDeferredRetcode(UT_KEY(CFE_FS_WriteHeader), 1, -1);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_WRITE_CFE_HDR_ERR_EID);
 
@@ -3301,7 +3349,7 @@ void TestTask(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(OS_OpenCreate), OS_ERROR);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CREATING_CDS_DUMP_ERR_EID);
 
@@ -3310,14 +3358,14 @@ void TestTask(void)
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(OS_write), OS_ERROR);
     ES_UT_SetupSingleCDSRegistry("CFE_ES.CDS_NAME", ES_UT_CDS_BLOCK_SIZE, false, NULL);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_DUMP_ERR_EID);
 
     /* Test telemetry pool statistics retrieval with an invalid handle */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.SendMemPoolStatsCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.SendMemPoolStatsCmd),
                     UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_INVALID_POOL_HANDLE_ERR_EID);
 
@@ -3325,42 +3373,42 @@ void TestTask(void)
     ES_ResetUnitTest();
     ES_UT_SetupMemPoolId(&UtPoolRecPtr);
     CmdBuf.SendMemPoolStatsCmd.Payload.PoolHandle = CFE_ES_MemPoolRecordGetID(UtPoolRecPtr);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.SendMemPoolStatsCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.SendMemPoolStatsCmd),
                     UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_TLM_POOL_STATS_INFO_EID);
 
     /* Test the command pipe message process with an invalid command */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_INVALID_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_INVALID_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CC1_ERR_EID);
 
     /* Test sending a no-op command with an invalid command length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_NOOP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_NOOP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a reset counters command with an invalid command length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_RESET_COUNTERS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_RESET_COUNTERS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a cFE restart command with an invalid command length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_RESTART_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_RESTART_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test cFE restart with a power on reset */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.RestartCmd.Payload.RestartType = CFE_PSP_RST_TYPE_POWERON;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.RestartCmd), UT_TPID_CFE_ES_CMD_RESTART_CC);
     CFE_UtAssert_EVENTNOTSENT(CFE_ES_BOOT_ERR_EID);
 
     /* Test sending a start application command with an invalid command
      * length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test start application command with a processor restart on application
@@ -3378,113 +3426,113 @@ void TestTask(void)
     CmdBuf.StartAppCmd.Payload.ExceptionAction = CFE_ES_ExceptionAction_PROC_RESTART;
     CmdBuf.StartAppCmd.Payload.Priority        = 160;
     CmdBuf.StartAppCmd.Payload.StackSize       = CFE_ES_MEMOFFSET_C(CFE_PLATFORM_ES_DEFAULT_STACK_SIZE);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.StartAppCmd), UT_TPID_CFE_ES_CMD_START_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_START_INF_EID);
 
     /* Test sending a stop application command with an invalid command
      * length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_STOP_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_STOP_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a restart application command with an invalid command
      * length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_RESTART_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a reload application command with an invalid command
      * length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_RELOAD_APP_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a write request for a single application with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_QUERY_ONE_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a write request for all applications with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_QUERY_ALL_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a write request for all tasks with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_QUERY_ALL_TASKS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to clear the system log with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_CLEAR_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_CLEAR_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to overwrite the system log with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to write the system log with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test successful overwriting of the system log using overwrite mode */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.OverwriteSysLogCmd.Payload.Mode = CFE_ES_LogMode_OVERWRITE;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.OverwriteSysLogCmd),
-                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYSLOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.OverwriteSysLogCmd),
+                    UT_TPID_CFE_ES_CMD_OVER_WRITE_SYS_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_SYSLOGMODE_EID);
 
     /* Test sending a request to write the error log with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_WRITE_ER_LOG_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to reset the processor reset count with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_RESET_PR_COUNT_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to set the maximum processor reset count with
      * an invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_SET_MAX_PR_COUNT_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_SET_MAX_PR_COUNT_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a request to delete the CDS with an invalid command
      * length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_DELETE_CDS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test sending a telemetry pool statistics retrieval command with an
      * invalid command length
      */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_SEND_MEM_POOL_STATS_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test successful dump of CDS to file using a specified dump file name */
@@ -3495,19 +3543,19 @@ void TestTask(void)
     strncpy(CmdBuf.DumpCDSRegistryCmd.Payload.DumpFilename, "DumpFile",
             sizeof(CmdBuf.DumpCDSRegistryCmd.Payload.DumpFilename) - 1);
     CmdBuf.DumpCDSRegistryCmd.Payload.DumpFilename[sizeof(CmdBuf.DumpCDSRegistryCmd.Payload.DumpFilename) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.DumpCDSRegistryCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.DumpCDSRegistryCmd),
                     UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_CDS_REG_DUMP_INF_EID);
 
     /* Dump CDS command with invalid length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_DUMP_CDS_REGISTRY_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_LEN_ERR_EID);
 
     /* Test error when sending Build Info event */
     ES_ResetUnitTest();
     UT_SetDeferredRetcode(UT_KEY(CFE_EVS_SendEvent), 1, CFE_EVS_INVALID_PARAMETER);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_NOOP_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.NoopCmd), UT_TPID_CFE_ES_CMD_NOOP_CC);
     CFE_UtAssert_PRINTF("Error sending build info event");
 
     /*
@@ -3559,8 +3607,9 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PERF_TRIGGER_START;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PerfTrigger_START;
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_EID);
 
     /* Test successful performance data collection start in CENTER
@@ -3568,8 +3617,9 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PERF_TRIGGER_CENTER;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PerfTrigger_CENTER;
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_EID);
 
     /* Test successful performance data collection start in END
@@ -3577,8 +3627,9 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PERF_TRIGGER_END;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PerfTrigger_END;
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_EID);
 
     /* Test performance data collection start with an invalid trigger mode
@@ -3586,8 +3637,9 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    CmdBuf.PerfStartCmd.Payload.TriggerMode = (CFE_ES_PERF_TRIGGER_END + 1);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode = (CFE_ES_PerfTrigger_END + 1);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_TRIG_ERR_EID);
 
     /* Test performance data collection start with an invalid trigger mode
@@ -3596,7 +3648,8 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfStartCmd.Payload.TriggerMode = 0xffffffff;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_TRIG_ERR_EID);
 
     /* Test performance data collection start with a file write in progress */
@@ -3605,14 +3658,16 @@ void TestPerf(void)
     /* clearing the BackgroundPerfDumpState will fully reset to initial state */
     memset(&CFE_ES_Global.BackgroundPerfDumpState, 0, sizeof(CFE_ES_Global.BackgroundPerfDumpState));
     CFE_ES_Global.BackgroundPerfDumpState.CurrentState = CFE_ES_PerfDumpState_INIT;
-    CmdBuf.PerfStartCmd.Payload.TriggerMode            = CFE_ES_PERF_TRIGGER_START;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode            = CFE_ES_PerfTrigger_START;
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_ERR_EID);
 
     /* Check again with pending state not idle */
     CFE_ES_Global.BackgroundPerfDumpState.CurrentState = CFE_ES_PerfDumpState_IDLE;
     CFE_ES_Global.BackgroundPerfDumpState.PendingState = CFE_ES_PerfDumpState_INIT;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_ERR_EID);
 
     /* Test performance data collection by sending another valid
@@ -3621,15 +3676,17 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CFE_ES_Global.BackgroundPerfDumpState, 0, sizeof(CFE_ES_Global.BackgroundPerfDumpState));
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PERF_TRIGGER_START;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStartCmd), UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    CmdBuf.PerfStartCmd.Payload.TriggerMode = CFE_ES_PerfTrigger_START;
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStartCmd),
+                    UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STARTCMD_EID);
 
     /* Test successful performance data collection stop */
     ES_ResetUnitTest();
     memset(&CFE_ES_Global.BackgroundPerfDumpState, 0, sizeof(CFE_ES_Global.BackgroundPerfDumpState));
     memset(&CmdBuf, 0, sizeof(CmdBuf));
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStopCmd), UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStopCmd),
+                    UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STOPCMD_EID);
 
     /* Test performance data collection stop with a file name validation issue */
@@ -3637,7 +3694,8 @@ void TestPerf(void)
     memset(&CFE_ES_Global.BackgroundPerfDumpState, 0, sizeof(CFE_ES_Global.BackgroundPerfDumpState));
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     UT_SetDefaultReturnValue(UT_KEY(CFE_FS_ParseInputFileNameEx), CFE_FS_INVALID_PATH);
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStopCmd), UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStopCmd),
+                    UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_LOG_ERR_EID);
 
     /* Test successful performance data collection stop with a non-default
@@ -3648,19 +3706,22 @@ void TestPerf(void)
     memset(&CFE_ES_Global.BackgroundPerfDumpState, 0, sizeof(CFE_ES_Global.BackgroundPerfDumpState));
     strncpy(CmdBuf.PerfStopCmd.Payload.DataFileName, "filename", sizeof(CmdBuf.PerfStopCmd.Payload.DataFileName) - 1);
     CmdBuf.PerfStopCmd.Payload.DataFileName[sizeof(CmdBuf.PerfStopCmd.Payload.DataFileName) - 1] = '\0';
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStopCmd), UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStopCmd),
+                    UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STOPCMD_EID);
 
     /* Test performance data collection stop with a file write in progress */
     ES_ResetUnitTest();
     CFE_ES_Global.BackgroundPerfDumpState.CurrentState = CFE_ES_PerfDumpState_INIT;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStopCmd), UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStopCmd),
+                    UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STOPCMD_ERR2_EID);
 
     /* Repeat with pending state not IDLE */
     CFE_ES_Global.BackgroundPerfDumpState.CurrentState = CFE_ES_PerfDumpState_IDLE;
     CFE_ES_Global.BackgroundPerfDumpState.PendingState = CFE_ES_PerfDumpState_INIT;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfStopCmd), UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfStopCmd),
+                    UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_STOPCMD_ERR2_EID);
 
     /* Test performance filter mask command with out of range filter
@@ -3668,7 +3729,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfSetFilterMaskCmd.Payload.FilterMaskNum = CFE_ES_PERF_32BIT_WORDS_IN_MASK;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfSetFilterMaskCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfSetFilterMaskCmd),
                     UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_FILTMSKERR_EID);
 
@@ -3676,7 +3737,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfSetFilterMaskCmd.Payload.FilterMaskNum = CFE_ES_PERF_32BIT_WORDS_IN_MASK / 2;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfSetFilterMaskCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfSetFilterMaskCmd),
                     UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_FILTMSKCMD_EID);
 
@@ -3685,7 +3746,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfSetTrigMaskCmd.Payload.TriggerMaskNum = 0;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfSetTrigMaskCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfSetTrigMaskCmd),
                     UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_TRIGMSKCMD_EID);
 
@@ -3695,7 +3756,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfSetTrigMaskCmd.Payload.TriggerMaskNum = CFE_ES_PERF_32BIT_WORDS_IN_MASK - 1;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfSetTrigMaskCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfSetTrigMaskCmd),
                     UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_TRIGMSKCMD_EID);
 
@@ -3705,7 +3766,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     memset(&CmdBuf, 0, sizeof(CmdBuf));
     CmdBuf.PerfSetTrigMaskCmd.Payload.TriggerMaskNum = CFE_ES_PERF_32BIT_WORDS_IN_MASK + 1;
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, sizeof(CmdBuf.PerfSetTrigMaskCmd),
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), sizeof(CmdBuf.PerfSetTrigMaskCmd),
                     UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC);
     CFE_UtAssert_EVENTSENT(CFE_ES_PERF_TRIGMSKERR_EID);
 
@@ -3723,11 +3784,11 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     Perf->MetaData.InvalidMarkerReported = true;
-    Perf->MetaData.Mode                  = CFE_ES_PERF_TRIGGER_START;
+    Perf->MetaData.Mode                  = CFE_ES_PerfTrigger_START;
     Perf->MetaData.DataCount             = CFE_PLATFORM_ES_PERF_DATA_BUFFER_SIZE + 1;
     Perf->MetaData.TriggerMask[0]        = 0xFFFF;
     CFE_ES_PerfLogAdd(1, 0);
-    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PERF_TRIGGER_START);
+    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PerfTrigger_START);
     UtAssert_UINT32_EQ(Perf->MetaData.State, CFE_ES_PERF_IDLE);
 
     /* Test addition of a new entry to the performance log with CENTER
@@ -3735,10 +3796,10 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     Perf->MetaData.State        = CFE_ES_PERF_TRIGGERED;
-    Perf->MetaData.Mode         = CFE_ES_PERF_TRIGGER_CENTER;
+    Perf->MetaData.Mode         = CFE_ES_PerfTrigger_CENTER;
     Perf->MetaData.TriggerCount = CFE_PLATFORM_ES_PERF_DATA_BUFFER_SIZE / 2 + 1;
     CFE_ES_PerfLogAdd(1, 0);
-    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PERF_TRIGGER_CENTER);
+    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PerfTrigger_CENTER);
     UtAssert_UINT32_EQ(Perf->MetaData.State, CFE_ES_PERF_IDLE);
 
     /* Test addition of a new entry to the performance log with END
@@ -3746,9 +3807,9 @@ void TestPerf(void)
      */
     ES_ResetUnitTest();
     Perf->MetaData.State = CFE_ES_PERF_TRIGGERED;
-    Perf->MetaData.Mode  = CFE_ES_PERF_TRIGGER_END;
+    Perf->MetaData.Mode  = CFE_ES_PerfTrigger_END;
     CFE_ES_PerfLogAdd(1, 0);
-    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PERF_TRIGGER_END);
+    UtAssert_UINT32_EQ(Perf->MetaData.Mode, CFE_ES_PerfTrigger_END);
     UtAssert_UINT32_EQ(Perf->MetaData.State, CFE_ES_PERF_IDLE);
 
     /* Test addition where state goes to idle after first check */
@@ -3801,7 +3862,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     Perf->MetaData.TriggerCount   = 0;
     Perf->MetaData.State          = CFE_ES_PERF_TRIGGERED;
-    Perf->MetaData.Mode           = CFE_ES_PERF_TRIGGER_START;
+    Perf->MetaData.Mode           = CFE_ES_PerfTrigger_START;
     Perf->MetaData.TriggerMask[0] = 0xffff;
     CFE_ES_PerfLogAdd(0x1, 0);
     UtAssert_UINT32_EQ(Perf->MetaData.TriggerCount, 1);
@@ -3812,7 +3873,7 @@ void TestPerf(void)
     ES_ResetUnitTest();
     Perf->MetaData.TriggerCount = CFE_PLATFORM_ES_PERF_DATA_BUFFER_SIZE / 2 - 2;
     Perf->MetaData.State        = CFE_ES_PERF_TRIGGERED;
-    Perf->MetaData.Mode         = CFE_ES_PERF_TRIGGER_CENTER;
+    Perf->MetaData.Mode         = CFE_ES_PerfTrigger_CENTER;
     CFE_ES_PerfLogAdd(0x1, 0);
     UtAssert_UINT32_EQ(Perf->MetaData.State, CFE_ES_PERF_TRIGGERED);
 
@@ -3828,22 +3889,22 @@ void TestPerf(void)
 
     /* Test performance data collection start with an invalid message length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_START_PERF_DATA_CC);
     CFE_UtAssert_EVENTNOTSENT(CFE_ES_PERF_STARTCMD_EID);
 
     /* Test performance data collection stop with an invalid message length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_STOP_PERF_DATA_CC);
     CFE_UtAssert_EVENTNOTSENT(CFE_ES_PERF_STOPCMD_EID);
 
     /* Test performance data filter mask with an invalid message length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_SET_PERF_FILTER_MASK_CC);
     CFE_UtAssert_EVENTNOTSENT(CFE_ES_PERF_FILTMSKCMD_EID);
 
     /* Test performance data trigger mask with an invalid message length */
     ES_ResetUnitTest();
-    UT_CallTaskPipe(CFE_ES_TaskPipe, &CmdBuf.Msg, 0, UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC);
+    UT_CallTaskPipe(CFE_ES_TaskPipe, CFE_MSG_PTR(CmdBuf), 0, UT_TPID_CFE_ES_CMD_SET_PERF_TRIGGER_MASK_CC);
     CFE_UtAssert_EVENTNOTSENT(CFE_ES_PERF_TRIGMSKCMD_EID);
 
     /* Test perf log dump state machine */
@@ -3935,7 +3996,7 @@ void TestAPI(void)
     osal_id_t            TestObjId;
     char                 AppName[OS_MAX_API_NAME + 12];
     char                 SysLogBuf[CFE_TIME_PRINTED_STRING_SIZE + 20];
-    uint32               SysLogBufSize;
+    size_t               SysLogBufSize;
     uint32               StackBuf[8];
     uint8                Data[12];
     uint32               ResetType;
@@ -4493,9 +4554,9 @@ void TestAPI(void)
     UT_SetHandlerFunction(UT_KEY(CFE_TIME_Print), ES_UT_FillBuffer, &SysLogBufSize);
     UtAssert_VOIDCALL(ES_UT_SysLog_snprintf(SysLogBuf, sizeof(SysLogBuf), "b"));
 
-    /* Force a vsnprintf failure */
+    /* Force a vsnprintf to return 0 */
     ES_ResetUnitTest();
-    UtAssert_VOIDCALL(ES_UT_SysLog_snprintf(SysLogBuf, sizeof(SysLogBuf), NULL));
+    UtAssert_VOIDCALL(ES_UT_SysLog_snprintf(SysLogBuf, sizeof(SysLogBuf), ""));
 
     /* Test run loop with an application error status */
     ES_ResetUnitTest();
@@ -4678,7 +4739,7 @@ void TestCDS()
     CFE_ES_CDSHandle_t   CDSHandle;
     CFE_ES_CDS_RegRec_t *UtCDSRegRecPtr;
     uint32               i;
-    uint32               TempSize;
+    size_t               TempSize;
     uint8                BlockData[ES_UT_CDS_BLOCK_SIZE];
 
     UtPrintf("Begin Test CDS");
@@ -5533,8 +5594,8 @@ void TestSysLog(void)
 
     CFE_ES_SysLogReadStart_Unsync(&SysLogBuffer);
 
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.EndIdx, sizeof(CFE_ES_Global.ResetDataPtr->SystemLog) - 1);
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.LastOffset, sizeof(CFE_ES_Global.ResetDataPtr->SystemLog) - 1);
+    UtAssert_EQ(size_t, SysLogBuffer.EndIdx, sizeof(CFE_ES_Global.ResetDataPtr->SystemLog) - 1);
+    UtAssert_EQ(size_t, SysLogBuffer.LastOffset, sizeof(CFE_ES_Global.ResetDataPtr->SystemLog) - 1);
     UtAssert_ZERO(SysLogBuffer.BlockSize);
     UtAssert_ZERO(SysLogBuffer.SizeLeft);
 
@@ -5561,8 +5622,8 @@ void TestSysLog(void)
     CFE_ES_SysLogReadData(&SysLogBuffer);
 
     UtAssert_UINT32_EQ(SysLogBuffer.EndIdx, 3);
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.LastOffset, 1);
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.BlockSize, 1);
+    UtAssert_EQ(size_t, SysLogBuffer.LastOffset, 1);
+    UtAssert_EQ(size_t, SysLogBuffer.BlockSize, 1);
     UtAssert_ZERO(SysLogBuffer.SizeLeft);
 
     /* Test case where calculated blocksize results in 0 */
@@ -5573,8 +5634,8 @@ void TestSysLog(void)
     CFE_ES_SysLogReadData(&SysLogBuffer);
 
     UtAssert_UINT32_EQ(SysLogBuffer.EndIdx, 0);
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.LastOffset, 0);
-    CFE_UtAssert_MEMOFFSET_EQ(SysLogBuffer.BlockSize, 0);
+    UtAssert_EQ(size_t, SysLogBuffer.LastOffset, 0);
+    UtAssert_EQ(size_t, SysLogBuffer.BlockSize, 0);
     UtAssert_INT32_EQ(SysLogBuffer.SizeLeft, 1);
 
     /* Test nominal flow through CFE_ES_SysLogDump

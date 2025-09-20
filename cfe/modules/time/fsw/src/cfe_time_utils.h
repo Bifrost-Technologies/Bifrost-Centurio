@@ -49,18 +49,18 @@
 /*
 ** Interrupt task definitions...
 */
-#define CFE_TIME_TASK_TONE_NAME "TIME_TONE_TASK"
-#define CFE_TIME_TASK_1HZ_NAME  "TIME_1HZ_TASK"
-#define CFE_TIME_TASK_STACK_PTR CFE_ES_TASK_STACK_ALLOCATE
-#define CFE_TIME_TASK_FLAGS     0
+#define CFE_TIME_TASK_TONE_NAME  "TIME_TONE_TASK"
+#define CFE_TIME_TASK_ONEHZ_NAME "TIME_ONEHZ_TASK"
+#define CFE_TIME_TASK_STACK_PTR  CFE_ES_TASK_STACK_ALLOCATE
+#define CFE_TIME_TASK_FLAGS      0
 
 /*
 ** Interrupt semaphore definitions...
 */
-#define CFE_TIME_SEM_TONE_NAME "TIME_TONE_SEM"
-#define CFE_TIME_SEM_1HZ_NAME  "TIME_1HZ_SEM"
-#define CFE_TIME_SEM_VALUE     0
-#define CFE_TIME_SEM_OPTIONS   0
+#define CFE_TIME_SEM_TONE_NAME  "TIME_TONE_SEM"
+#define CFE_TIME_SEM_ONEHZ_NAME "TIME_ONEHZ_SEM"
+#define CFE_TIME_SEM_VALUE      0
+#define CFE_TIME_SEM_OPTIONS    0
 
 /*
 ** Main Task Pipe definitions...
@@ -259,7 +259,7 @@ typedef struct
     /*
     ** Local 1Hz wake-up command packet (not related to time at tone)...
     */
-    CFE_TIME_1HzCmd_t Local1HzCmd;
+    CFE_TIME_OneHzCmd_t LocalOneHzCmd;
 
     /*
     ** Time at the tone command packets (sent by time servers)...
@@ -330,12 +330,6 @@ CFE_TIME_SysTime_t CFE_TIME_LatchClock(void);
  * @brief Time task initialization
  */
 int32 CFE_TIME_TaskInit(void);
-
-/*---------------------------------------------------------------------------------------*/
-/**
- * @brief Process command pipe message
- */
-void CFE_TIME_TaskPipe(CFE_SB_Buffer_t *SBBufPtr);
 
 /*---------------------------------------------------------------------------------------*/
 /**
@@ -672,7 +666,7 @@ void CFE_TIME_Local1HzTimerCallback(osal_id_t TimerId, void *Arg);
 /**
  * @brief  Onboard command (HK request)
  */
-int32 CFE_TIME_HousekeepingCmd(const CFE_TIME_SendHkCmd_t *data);
+int32 CFE_TIME_SendHkCmd(const CFE_TIME_SendHkCmd_t *data);
 
 /*
 ** Command handler for "tone signal detected"...
@@ -708,7 +702,7 @@ int32 CFE_TIME_ToneDataCmd(const CFE_TIME_ToneDataCmd_t *data);
  * This also implements the "fake tone" functionality when that is enabled,
  * as we do not need a separate MID for this job.
  */
-int32 CFE_TIME_OneHzCmd(const CFE_TIME_1HzCmd_t *data);
+int32 CFE_TIME_OneHzCmd(const CFE_TIME_OneHzCmd_t *data);
 
 #if (CFE_PLATFORM_TIME_CFG_SERVER == true)
 
@@ -766,7 +760,7 @@ void CFE_TIME_AdjustImpl(const CFE_TIME_TimeCmd_Payload_t *CommandPtr, CFE_TIME_
  *
  * This is a wrapper around CFE_TIME_1HzAdjImpl()
  */
-int32 CFE_TIME_Add1HZAdjustmentCmd(const CFE_TIME_Add1HZAdjustmentCmd_t *data);
+int32 CFE_TIME_AddOneHzAdjustmentCmd(const CFE_TIME_AddOneHzAdjustmentCmd_t *data);
 
 /*---------------------------------------------------------------------------------------*/
 /**
@@ -863,7 +857,7 @@ int32 CFE_TIME_SetTimeCmd(const CFE_TIME_SetTimeCmd_t *data);
  *
  * This is a wrapper around CFE_TIME_1HzAdjImpl()
  */
-int32 CFE_TIME_Sub1HZAdjustmentCmd(const CFE_TIME_Sub1HZAdjustmentCmd_t *data);
+int32 CFE_TIME_SubOneHzAdjustmentCmd(const CFE_TIME_SubOneHzAdjustmentCmd_t *data);
 
 /*---------------------------------------------------------------------------------------*/
 /**

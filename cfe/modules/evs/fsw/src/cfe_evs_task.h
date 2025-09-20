@@ -48,7 +48,7 @@
 #include "cfe_evs_api_typedefs.h"
 #include "cfe_evs_log_typedef.h"
 #include "cfe_sb_api_typedefs.h"
-#include "cfe_evs_events.h"
+#include "cfe_evs_eventids.h"
 
 /*********************  Macro and Constant Type Definitions   ***************************/
 
@@ -60,14 +60,17 @@
 #define CFE_EVS_MAX_FILTER_COUNT     65535
 #define CFE_EVS_MAX_SQUELCH_COUNT    255
 #define CFE_EVS_PIPE_NAME            "EVS_CMD_PIPE"
-#define CFE_EVS_MAX_PORT_MSG_LENGTH  (CFE_MISSION_EVS_MAX_MESSAGE_LENGTH + OS_MAX_API_NAME + 30)
+#define CFE_EVS_MAX_PORT_MSG_LENGTH  (CFE_MISSION_EVS_MAX_MESSAGE_LENGTH + OS_MAX_API_NAME + 19)
 
 /* Since CFE_EVS_MAX_PORT_MSG_LENGTH is the size of the buffer that is sent to
  * print out (using OS_printf), we need to check to make sure that the buffer
- * size the OS uses is big enough. This check has to be made here because it is
- * the first spot after CFE_EVS_MAX_PORT_MSG_LENGTH is defined */
-#if OS_BUFFER_SIZE < CFE_EVS_MAX_PORT_MSG_LENGTH
-#error CFE_EVS_MAX_PORT_MSG_LENGTH cannot be greater than OS_BUFFER_SIZE!
+ * size the OS uses is big enough. The buffer needs to have at least 11 extra
+ * characters to accommodate the format string "EVS Port%u %s\n" used in
+ * downstream processing for sending messages via ports. This check has to be
+ * made here because it is the first spot after CFE_EVS_MAX_PORT_MSG_LENGTH
+ * is defined. */
+#if OS_BUFFER_SIZE < CFE_EVS_MAX_PORT_MSG_LENGTH + 11
+#error CFE_EVS_MAX_PORT_MSG_LENGTH cannot be greater than OS_BUFFER_SIZE - 11!
 #endif
 
 /************************  Internal Structure Definitions  *****************************/
@@ -143,14 +146,6 @@ extern CFE_EVS_Global_t CFE_EVS_Global;
  */
 int32 CFE_EVS_TaskInit(void);
 
-/*---------------------------------------------------------------------------------------*/
-/**
- * @brief Command Pipe Processing
- *
- * This function processes packets received on the EVS command pipe.
- */
-void CFE_EVS_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
-
 /*
  * EVS Message Handler Functions
  */
@@ -161,7 +156,7 @@ void CFE_EVS_ProcessCommandPacket(CFE_SB_Buffer_t *SBBufPtr);
  *
  * Request for housekeeping status telemetry packet.
  */
-int32 CFE_EVS_ReportHousekeepingCmd(const CFE_EVS_SendHkCmd_t *data);
+int32 CFE_EVS_SendHkCmd(const CFE_EVS_SendHkCmd_t *data);
 
 /*---------------------------------------------------------------------------------------*/
 /**

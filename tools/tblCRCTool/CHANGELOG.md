@@ -1,6 +1,10 @@
 # Changelog
 
-## Develop,ent Build: v1.3.0-rc4+dev28
+## Development Build: equuleus-rc1+dev2
+- updating tblCRCTool to use new versioning system
+- See <https://github.com/nasa/tblCRCTool/pull/80>
+
+## Development Build: v1.3.0-rc4+dev28
 - Replace exit(1) with preferred macro EXIT_FAILURE
 - See <https://github.com/nasa/tblCRCTool/pull/77>
 

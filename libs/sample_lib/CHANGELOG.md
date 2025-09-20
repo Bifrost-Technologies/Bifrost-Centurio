@@ -1,5 +1,9 @@
 # Changelog
 
+## Development Build: equuleus-rc1+dev2
+- updating sample_lib to use new versioning system
+- See <https://github.com/nasa/sample_lib/pull/96>
+
 ## Development Build: v1.3.0-rc4+dev32
 - Add newline at end of sample_lib.c
 - See <https://github.com/nasa/sample_lib/pull/92>

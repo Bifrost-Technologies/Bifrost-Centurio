@@ -33,5 +33,6 @@
  */
 /* Test extended header mission functionality */
 void Test_MSG_Init(void);
+void Test_MSG_OriginationAction(void);
 
 #endif /* TEST_CFE_MSG_INIT_H */

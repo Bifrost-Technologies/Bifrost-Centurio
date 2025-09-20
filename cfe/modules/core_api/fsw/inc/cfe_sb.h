@@ -402,18 +402,32 @@ CFE_Status_t CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeI
 **          software bus will read the message ID from the message header to
 **          determine which pipes should receive the message.
 **
+**          The IsOrigination parameter should be passed as "true" if the message was
+**          newly constructed by the sender and is being sent for the first time.  This
+**          enables the message origination actions as determined by the CFE MSG module,
+**          which may include (but not limited to):
+**            - Updating sequence number
+**            - Updating timestamp
+**            - Calcualating a CRC, checksum, or other message error control field
+**
+**          Conversely, when forwarding a message that originated from
+**          an external entity (e.g. messages passing through CI or SBN), the
+**          parameter should be passed as "false" to not overwrite existing data.
+**
 ** \par Assumptions, External Events, and Notes:
 **          - This routine will not normally wait for the receiver tasks to
 **            process the message before returning control to the caller's task.
 **          - However, if a higher priority task is pending and subscribed to
 **            this message, that task may get to run before returning
 **            control to the caller.
+**          - In previous versions of CFE, the boolean parameter referred to the
+**            sequence number header of telemetry messages only.  This has been
+**            extended to apply more generically to any headers, as determined by
+**            the CFE MSG implementation.
 **
 ** \param[in]  MsgPtr       A pointer to the message to be sent @nonnull.  This must point
 **                          to the first byte of the message header.
-** \param[in] IncrementSequenceCount Boolean to increment the internally tracked
-**                                   sequence count and update the message if the
-**                                   buffer contains a telemetry message
+** \param[in] IsOrigination  Update the headers of the message
 **
 ** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS         \copybrief CFE_SUCCESS
@@ -421,7 +435,7 @@ CFE_Status_t CFE_SB_UnsubscribeLocal(CFE_SB_MsgId_t MsgId, CFE_SB_PipeId_t PipeI
 ** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
 ** \retval #CFE_SB_BUF_ALOC_ERR \covtest \copybrief CFE_SB_BUF_ALOC_ERR
 **/
-CFE_Status_t CFE_SB_TransmitMsg(const CFE_MSG_Message_t *MsgPtr, bool IncrementSequenceCount);
+CFE_Status_t CFE_SB_TransmitMsg(const CFE_MSG_Message_t *MsgPtr, bool IsOrigination);
 
 /*****************************************************************************/
 /**
@@ -463,6 +477,7 @@ CFE_Status_t CFE_SB_TransmitMsg(const CFE_MSG_Message_t *MsgPtr, bool IncrementS
 ** \retval #CFE_SB_NO_MESSAGE   \copybrief CFE_SB_NO_MESSAGE
 **/
 CFE_Status_t CFE_SB_ReceiveBuffer(CFE_SB_Buffer_t **BufPtr, CFE_SB_PipeId_t PipeId, int32 TimeOut);
+
 /** @} */
 
 /** @defgroup CFEAPISBZeroCopy cFE Zero Copy APIs
@@ -536,6 +551,18 @@ CFE_Status_t CFE_SB_ReleaseMessageBuffer(CFE_SB_Buffer_t *BufPtr);
 **          internal buffer.  The "zero copy" interface can be used to improve
 **          performance in high-rate, high-volume software bus traffic.
 **
+**          The IsOrigination parameter should be passed as "true" if the message was
+**          newly constructed by the sender and is being sent for the first time.  This
+**          enables the message origination actions as determined by the CFE MSG module,
+**          which may include (but not limited to):
+**            - Updating sequence number
+**            - Updating timestamp
+**            - Calcualating a CRC, checksum, or other message error control field
+**
+**          Conversely, when forwarding a message that originated from
+**          an external entity (e.g. messages passing through CI or SBN), the
+**          parameter should be passed as "false" to not overwrite existing data.
+**
 ** \par Assumptions, External Events, and Notes:
 **          -# A handle returned by #CFE_SB_AllocateMessageBuffer is "consumed" by
 **             a _successful_ call to #CFE_SB_TransmitBuffer.
@@ -553,17 +580,15 @@ CFE_Status_t CFE_SB_ReleaseMessageBuffer(CFE_SB_Buffer_t *BufPtr);
 **          -# This function will increment and apply the internally tracked
 **             sequence counter if set to do so.
 **
-** \param[in] BufPtr                 A pointer to the buffer to be sent @nonnull.
-** \param[in] IncrementSequenceCount Boolean to increment the internally tracked
-**                                   sequence count and update the message if the
-**                                   buffer contains a telemetry message
+** \param[in] BufPtr         A pointer to the buffer to be sent @nonnull.
+** \param[in] IsOrigination  Update applicable header field(s) of a newly constructed message
 **
 ** \return Execution status, see \ref CFEReturnCodes
 ** \retval #CFE_SUCCESS         \copybrief CFE_SUCCESS
 ** \retval #CFE_SB_BAD_ARGUMENT \copybrief CFE_SB_BAD_ARGUMENT
 ** \retval #CFE_SB_MSG_TOO_BIG  \copybrief CFE_SB_MSG_TOO_BIG
 **/
-CFE_Status_t CFE_SB_TransmitBuffer(CFE_SB_Buffer_t *BufPtr, bool IncrementSequenceCount);
+CFE_Status_t CFE_SB_TransmitBuffer(CFE_SB_Buffer_t *BufPtr, bool IsOrigination);
 
 /** @} */
 
@@ -828,6 +853,133 @@ static inline CFE_SB_MsgId_t CFE_SB_ValueToMsgId(CFE_SB_MsgId_Atom_t MsgIdValue)
     CFE_SB_MsgId_t Result = CFE_SB_MSGID_C(MsgIdValue);
     return Result;
 }
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID and instance number combination into a MsgID value integer
+ *
+ * \par Description
+ *    This function accepts a data pair of topic ID + instance number and returns the
+ *    corresponding MsgID Value (integer) for commands.
+ *
+ * \par Assumptions and Notes:
+ *    A topic ID identifies a certain data stream from an application, for example
+ *    the CFE Software bus ground commands (CFE_MISSION_SB_CMD_TOPICID).  In
+ *    contrast to MsgID, the topic ID is consistent across all CPUs in a system, whereas
+ *    each CPU instance will have a unique MsgID.
+ *
+ *    CPU instance numbers are 1-based.  The instance number of 0 is reserved
+ *    for "global" MsgID values that are the same on all CPUs.  The PSP function
+ *    may be used to obtain the current CPU number for the host processor.
+ *
+ * \sa CFE_SB_TlmTopicIdToMsgId(), CFE_PSP_GetProcessorId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_CmdTopicIdToMsgId(uint16 TopicId, uint16 InstanceNum);
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID and instance number combination into a MsgID value integer
+ *
+ * \par Description
+ *    This function accepts a data pair of topic ID + instance number and returns the
+ *    corresponding MsgID Value (integer) for telemetry.
+ *
+ * \par Assumptions and Notes:
+ *    A topic ID identifies a certain data stream from an application, for example
+ *    the CFE Software bus housekeeping telemetry (CFE_MISSION_SB_HK_TLM_TOPICID).  In
+ *    contrast to MsgID, the topic ID is consistent across all CPUs in a system, whereas
+ *    each CPU instance will have a unique MsgID.
+ *
+ *    CPU instance numbers are 1-based.  The instance number of 0 is reserved
+ *    for "global" MsgID values that are the same on all CPUs.  The PSP function
+ *    may be used to obtain the current CPU number for the host processor.
+ *
+ * \sa CFE_SB_CmdTopicIdToMsgId(), CFE_PSP_GetProcessorId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_TlmTopicIdToMsgId(uint16 TopicId, uint16 InstanceNum);
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID to a MsgID value integer for Global commands
+ *
+ * \par Description
+ *    This is a wrapper around CFE_SB_CmdTopicIdToMsgId() for topic IDs which
+ *    are the same on all CPUs within a system (i.e. not specific to a certain
+ *    processor)
+ *
+ * \par Assumptions and Notes:
+ *    Global MsgIDs may be used when only a single instance of a service exists
+ *    within the system.  The CFE framework does not use this feature for commands,
+ *    but is defined for future use.
+ *
+ * \sa CFE_SB_CmdTopicIdToMsgId(), CFE_SB_LocalCmdTopicIdToMsgId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_GlobalCmdTopicIdToMsgId(uint16 TopicId);
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID to a MsgID value integer for Global telemetry
+ *
+ * \par Description
+ *    This is a wrapper around CFE_SB_TlmTopicIdToMsgId() for topic IDs which
+ *    are the same on all CPUs within a system (i.e. not specific to a certain
+ *    processor)
+ *
+ * \par Assumptions and Notes:
+ *    Global MsgIDs may be used when only a single instance of a service exists
+ *    within the system.  An example for such telemetry is the time synchronization
+ *    service published by CFE_TIME.
+ *
+ * \sa CFE_SB_TlmTopicIdToMsgId(), CFE_SB_LocalTlmTopicIdToMsgId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_GlobalTlmTopicIdToMsgId(uint16 TopicId);
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID to a MsgID value integer for local commands
+ *
+ * \par Description
+ *    This is a wrapper around CFE_SB_CmdTopicIdToMsgId() for topic IDs which
+ *    are unique on all CPUs within a system (i.e. specific to a certain
+ *    processor)
+ *
+ * \par Assumptions and Notes:
+ *    This assumes the caller is referring to a service running on the same
+ *    processor instance as itself.
+ *
+ * \sa CFE_SB_CmdTopicIdToMsgId(), CFE_SB_LocalTlmTopicIdToMsgId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_LocalCmdTopicIdToMsgId(uint16 TopicId);
+
+/*****************************************************************************/
+/**
+ * \brief Converts a topic ID to a MsgID value integer for local telemetry
+ *
+ * \par Description
+ *    This is a wrapper around CFE_SB_TlmTopicIdToMsgId() for topic IDs which
+ *    are unique on all CPUs within a system (i.e. specific to a certain
+ *    processor)
+ *
+ * \par Assumptions and Notes:
+ *    This assumes the caller is referring to a service running on the same
+ *    processor instance as itself.
+ *
+ * \sa CFE_SB_TlmTopicIdToMsgId(), CFE_SB_LocalCmdTopicIdToMsgId()
+ *
+ * \return Integer representation of the #CFE_SB_MsgId_t
+ */
+CFE_SB_MsgId_Atom_t CFE_SB_LocalTlmTopicIdToMsgId(uint16 TopicId);
+
 /** @} */
 
 #endif /* CFE_SB_H */

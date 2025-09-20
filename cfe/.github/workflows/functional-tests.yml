@@ -34,7 +34,7 @@ jobs:
     #Continue if check-for-duplicates found no duplicates. Always runs for pull-requests.
     needs: check-for-duplicates
     if: ${{ needs.check-for-duplicates.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
@@ -89,14 +89,14 @@ jobs:
 
             counter=$(grep -c "BEGIN" cf/cfe_test.tmp)
             echo "Waiting for CFE Tests"
-            sleep 60
+            sleep 120
           done
 
           ../host/cmdUtil --endian=LE --pktid=0x1806 --cmdcode=2 --half=0x0002
         working-directory: ./build/exe/cpu1/
 
       - name: Archive cFS Startup Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cFS-startup-log-deprecate-true-${{ matrix.buildtype }}
           path: ./build/exe/cpu1/cf/cfe_test.log

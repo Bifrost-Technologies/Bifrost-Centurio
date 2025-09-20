@@ -17,20 +17,6 @@
  ************************************************************************/
 
 /*
-** File   :	cfe_psp_eeprom.c
-**
-** Author :	Ezra Yeheskeli
-**
-** Purpose:
-**		   This file  contains some of the OS APIs abstraction layer.
-**         It contains the processor architecture specific calls.
-**
-**  16-Nov-2003 Ezra Yeheskeli
-**          - First Creation.
-**
-*/
-
-/*
 ** Include section
 */
 #include <stdio.h>
@@ -50,26 +36,12 @@ void eeprom_direct_Init(uint32 PspModuleId)
 ** global memory
 */
 
-/*
- **
- ** Purpose:
- **
- ** Assumptions and Notes:
- **
- ** Parameters:
- **
- ** Global Inputs: None
- **
- ** Global Outputs: None
- **
- **
- ** Return Values:
- **	 CFE_PSP_SUCCESS
- **	 CFE_PSP_ERROR_TIMEOUT write operation did not go through after a specific
- **   timeout.
- **	 CFE_PSP_ERROR_ADD_MISALIGNED The Address is not aligned to 16 bit addressing
- **   scheme.
- */
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromWrite32(cpuaddr MemoryAddress, uint32 uint32Value)
 {
     uint32 ret_value = CFE_PSP_SUCCESS;
@@ -86,31 +58,17 @@ int32 CFE_PSP_EepromWrite32(cpuaddr MemoryAddress, uint32 uint32Value)
     return ret_value;
 }
 
-/*
- **
- ** Purpose:
- **
- ** Assumptions and Notes:
- **
- ** Parameters:
- **
- ** Global Inputs: None
- **
- ** Global Outputs: None
- **
- **
- ** Return Values:
- **   CFE_PSP_SUCCESS
- **	 CFE_PSP_ERROR_TIMEOUT write operation did not go through after a specific
- **   timeout.
- **   CFE_PSP_ERROR_ADD_MISALIGNED The Address is not aligned to 16 bit addressing
- **   scheme.
- */
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromWrite16(cpuaddr MemoryAddress, uint16 uint16Value)
 {
-    uint32 write32;
-    uint32 temp32;
-    uint32 aligned_address;
+    uint32  write32;
+    uint32  temp32;
+    cpuaddr aligned_address;
 
     /*
     ** check 16 bit alignment  , check the 1st lsb
@@ -180,29 +138,16 @@ int32 CFE_PSP_EepromWrite16(cpuaddr MemoryAddress, uint16 uint16Value)
     return CFE_PSP_EepromWrite32(aligned_address, write32);
 }
 
-/*
- **
- ** Purpose:
- **
- ** Assumptions and Notes:
- **
- ** Parameters:
- **
- ** Global Inputs: None
- **
- ** Global Outputs: None
- **
- **
- ** Return Values:
- **   CFE_PSP_SUCCESS
- **	 CFE_PSP_ERROR_TIMEOUT write operation did not go through after a specific
- **   timeout.
- */
-
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromWrite8(cpuaddr MemoryAddress, uint8 ByteValue)
 {
-    uint32 aligned_address;
-    uint16 write16, temp16;
+    cpuaddr aligned_address;
+    uint16  write16, temp16;
 
     temp16 = ByteValue;
 
@@ -264,91 +209,45 @@ int32 CFE_PSP_EepromWrite8(cpuaddr MemoryAddress, uint8 ByteValue)
     return CFE_PSP_EepromWrite16(aligned_address, write16);
 }
 
-/*
-**
-** Purpose:
-**		Enable the eeprom for write operation
-**
-** Assumptions and Notes:
-**
-** Parameters:
-**   Bank: Which bank of EEPROM
-**
-** Global Inputs: None
-**
-** Global Outputs: None
-**
-**
-** Return Values:
-**   CFE_PSP_SUCCESS
-*/
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromWriteEnable(uint32 Bank)
 {
     return CFE_PSP_SUCCESS;
 }
 
-/*
-**
-** Purpose:
-**		Disable  the eeprom from write operation
-**
-** Assumptions and Notes:
-**
-** Parameters:
-**   Bank: Which bank of EEPROM
-**
-** Global Inputs: None
-**
-** Global Outputs: None
-**
-**
-** Return Values:
-**   CFE_PSP_SUCCESS
-*/
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromWriteDisable(uint32 Bank)
 {
     return CFE_PSP_SUCCESS;
 }
 
-/*
-**
-** Purpose:
-**		Power up the eeprom
-** Assumptions and Notes:
-**
-** Parameters:
-**   Bank: Which bank of EEPROM
-**
-** Global Inputs: None
-**
-** Global Outputs: None
-**
-**
-** Return Values:
-**   CFE_PSP_SUCCESS
-*/
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromPowerUp(uint32 Bank)
 {
     return CFE_PSP_SUCCESS;
 }
 
-/*
-**
-** Purpose:
-**		Power down the eeprom
-** Assumptions and Notes:
-**
-** Parameters:
-**   Bank: Which bank of EEPROM
-**
-** Global Inputs: None
-**
-** Global Outputs: None
-**
-**
-** Return Values:
-**   CFE_PSP_SUCCESS
-*/
+/*----------------------------------------------------------------
+ *
+ * Implemented per public API
+ * See description in header file for argument/return detail
+ *
+ *-----------------------------------------------------------------*/
 int32 CFE_PSP_EepromPowerDown(uint32 Bank)
 {
     return CFE_PSP_SUCCESS;

@@ -42,6 +42,8 @@
 
 #include "cfe_ts_crc_version.h"
 
+#include "cfe_version.h"
+
 /* These headers are needed for CFE_FS_Header_t and CFE_TBL_File_Hdr_t, respectively.
  * This uses the OSAL definition of fixed-width types, even thought this tool
  * is not using OSAL itself.
@@ -108,11 +110,16 @@ int main(int argc, char **argv)
     int     fd;
     char    buffer[100];
     off_t   offsetReturn = 0;
+    char    VersionString[CFE_TS_CRC_CFG_MAX_VERSION_STR_LEN];
 
     /* check for valid input */
     if ((argc != 2) || (strncmp(argv[1], "--help", 100) == 0))
     {
-        printf("%s\n", CFE_TS_CRC_VERSION_STRING);
+        snprintf(VersionString, CFE_TS_CRC_CFG_MAX_VERSION_STR_LEN,
+        "%s %s %s (Codename %s), Last Official Release: %s %s)",
+        "tblCRCTool", CFE_TS_CRC_REVISION == 0 ? "Development Build" : "Release",
+        CFE_TS_CRC_VERSION, CFE_TS_CRC_BUILD_CODENAME, "tblCRCTool", CFE_TS_CRC_LAST_OFFICIAL);
+        printf("%s\n", VersionString);
         printf("\nUsage: cfe_ts_crc [filename]\n");
         exit(EXIT_FAILURE);
     }

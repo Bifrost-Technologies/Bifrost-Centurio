@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="bifrost_cFS_GroundSystem.Pages.TelemetryPage"
+             Title="cFS Telemetry">
+    <Grid RowDefinitions="Auto, Auto, Auto, *, *" Padding="12">
+        <!-- Controls and connection indicator -->
+        <HorizontalStackLayout Spacing="8">
+            <Entry x:Name="HostEntry" Text="127.0.0.1" WidthRequest="140" />
+            <Entry x:Name="CmdPktIdEntry" Text="0x1892" WidthRequest="100" />
+            <Entry x:Name="CmdCodeEntry" Text="0" WidthRequest="60" />
+            <Button Text="Send Cmd" Clicked="OnSendCmdClicked" />
+            <Button Text="Start Tlm" Clicked="OnStartTlmClicked" />
+            <Button Text="Stop Tlm" Clicked="OnStopTlmClicked" />
+            <Grid Padding="8,0,0,0" ColumnDefinitions="Auto,Auto,Auto" VerticalOptions="Center">
+                <BoxView x:Name="ConnIndicator" WidthRequest="12" HeightRequest="12" CornerRadius="6" Color="Red" />
+                <Label Grid.Column="1" Text="Link:" Margin="6,0,0,0" />
+                <Label Grid.Column="2" x:Name="ConnStatusLabel" Text="Disconnected" />
+            </Grid>
+        </HorizontalStackLayout>
+
+        <!-- Centurio Nav HK decoded view -->
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" Padding="0,8,0,8">
+            <Label Text="Centurio Nav HK" Grid.ColumnSpan="4" FontAttributes="Bold" />
+
+            <Label Grid.Row="1" Grid.Column="0" Text="Cmd Cnt:" />
+            <Label Grid.Row="1" Grid.Column="1" x:Name="CmdCntLabel" Text="-" />
+            <Label Grid.Row="1" Grid.Column="2" Text="Err Cnt:" />
+            <Label Grid.Row="1" Grid.Column="3" x:Name="ErrCntLabel" Text="-" />
+
+            <Label Grid.Row="2" Grid.Column="0" Text="Status:" />
+            <Label Grid.Row="2" Grid.Column="1" x:Name="StatusLabel" Text="-" />
+            <Label Grid.Row="2" Grid.Column="2" Text="Fix:" />
+            <Label Grid.Row="2" Grid.Column="3" x:Name="FixLabel" Text="-" />
+
+            <Label Grid.Row="3" Grid.Column="0" Text="Lat (deg):" />
+            <Label Grid.Row="3" Grid.Column="1" x:Name="LatLabel" Text="-" />
+            <Label Grid.Row="3" Grid.Column="2" Text="Lon (deg):" />
+            <Label Grid.Row="3" Grid.Column="3" x:Name="LonLabel" Text="-" />
+
+            <Label Grid.Row="4" Grid.Column="0" Text="Alt (m):" />
+            <Label Grid.Row="4" Grid.Column="1" x:Name="AltLabel" Text="-" />
+            <Label Grid.Row="4" Grid.Column="2" Text="Yaw (deg):" />
+            <Label Grid.Row="4" Grid.Column="3" x:Name="YawLabel" Text="-" />
+
+            <Label Grid.Row="5" Grid.Column="0" Text="Pitch (deg):" />
+            <Label Grid.Row="5" Grid.Column="1" x:Name="PitchLabel" Text="-" />
+            <Label Grid.Row="5" Grid.Column="2" Text="Roll (deg):" />
+            <Label Grid.Row="5" Grid.Column="3" x:Name="RollLabel" Text="-" />
+
+            <Label Grid.Row="6" Grid.Column="0" Text="Vel N (m/s):" />
+            <Label Grid.Row="6" Grid.Column="1" x:Name="VelNLabel" Text="-" />
+            <Label Grid.Row="6" Grid.Column="2" Text="Vel E (m/s):" />
+            <Label Grid.Row="6" Grid.Column="3" x:Name="VelELabel" Text="-" />
+
+            <Label Grid.Row="7" Grid.Column="0" Text="Vel D (m/s):" />
+            <Label Grid.Row="7" Grid.Column="1" x:Name="VelDLabel" Text="-" />
+            <Label Grid.Row="7" Grid.Column="2" Text="Throttle (%):" />
+            <Label Grid.Row="7" Grid.Column="3" x:Name="ThrottleLabel" Text="-" />
+
+            <Label Grid.Row="8" Grid.Column="0" Text="Last Packet:" />
+            <Label Grid.Row="8" Grid.Column="1" x:Name="LastPktTimeLabel" Text="-" />
+            <Label Grid.Row="8" Grid.Column="2" Text="# Frames:" />
+            <Label Grid.Row="8" Grid.Column="3" x:Name="FrameCountLabel" Text="0" />
+        </Grid>
+
+        <!-- Centurio Nav Commands -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" Padding="0,8,0,8" RowSpacing="6" ColumnSpacing="6">
+            <Label Text="Centurio Nav Commands" Grid.ColumnSpan="6" FontAttributes="Bold" Margin="0,0,0,4" />
+
+            <Button Grid.Row="1" Grid.Column="0" Text="NOOP" Clicked="OnNoopClicked" />
+            <Button Grid.Row="1" Grid.Column="2" Text="RESET" Clicked="OnResetClicked" />
+            <Button Grid.Row="1" Grid.Column="4" Text="Send HK" Clicked="OnSendHkClicked" />
+
+            <Label Grid.Row="2" Grid.Column="0" Text="Mode:" VerticalTextAlignment="Center" />
+            <Entry Grid.Row="2" Grid.Column="1" x:Name="ModeEntry" Text="0" Keyboard="Numeric" />
+            <Button Grid.Row="2" Grid.Column="2" Text="Set Mode" Clicked="OnSetModeClicked" />
+
+            <Label Grid.Row="3" Grid.Column="0" Text="Pos (lat,lon,alt m):" VerticalTextAlignment="Center" />
+            <HorizontalStackLayout Grid.Row="3" Grid.Column="1" Spacing="6">
+                <Entry x:Name="LatEntry" Text="0" WidthRequest="100" />
+                <Entry x:Name="LonEntry" Text="0" WidthRequest="100" />
+                <Entry x:Name="AltEntry" Text="0" WidthRequest="80" />
+            </HorizontalStackLayout>
+            <Button Grid.Row="3" Grid.Column="2" Text="Set Target Pos" Clicked="OnSetTargetPosClicked" />
+
+            <Label Grid.Row="4" Grid.Column="3" Text="Vel (N,E,D m/s):" VerticalTextAlignment="Center" />
+            <HorizontalStackLayout Grid.Row="4" Grid.Column="4" Spacing="6">
+                <Entry x:Name="VelNEntry" Text="0" WidthRequest="80" />
+                <Entry x:Name="VelEEntry" Text="0" WidthRequest="80" />
+                <Entry x:Name="VelDEntry" Text="0" WidthRequest="80" />
+            </HorizontalStackLayout>
+            <Button Grid.Row="4" Grid.Column="5" Text="Set Target Vel" Clicked="OnSetTargetVelClicked" />
+
+            <Label Grid.Row="5" Grid.Column="0" Text="Att (yaw,pitch,roll deg):" VerticalTextAlignment="Center" />
+            <HorizontalStackLayout Grid.Row="5" Grid.Column="1" Spacing="6">
+                <Entry x:Name="YawEntry" Text="0" WidthRequest="80" />
+                <Entry x:Name="PitchEntry" Text="0" WidthRequest="80" />
+                <Entry x:Name="RollEntry" Text="0" WidthRequest="80" />
+            </HorizontalStackLayout>
+            <Button Grid.Row="5" Grid.Column="2" Text="Set Target Att" Clicked="OnSetTargetAttClicked" />
+
+            <Label Grid.Row="6" Grid.Column="3" Text="Throttle (%)" VerticalTextAlignment="Center" />
+            <Entry Grid.Row="6" Grid.Column="4" x:Name="ThrottleEntry" Text="0" WidthRequest="80" />
+            <Button Grid.Row="6" Grid.Column="5" Text="Set Throttle" Clicked="OnSetThrottleClicked" />
+        </Grid>
+
+        <!-- Logs -->
+    <CollectionView Grid.Row="3" x:Name="LogList" ItemsSource="{Binding LogItems}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <StackLayout Padding="2,1">
+                        <Label Text="{Binding Line}" FontFamily="Consolas" FontSize="11" />
+                    </StackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Raw telemetry list -->
+    <CollectionView Grid.Row="4" x:Name="TlmList" ItemsSource="{Binding TelemetryItems}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <StackLayout Padding="6">
+                        <Label Text="{Binding Header}" FontAttributes="Bold" />
+                        <Label Text="{Binding Preview}" FontFamily="Consolas" FontSize="12" />
+                    </StackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

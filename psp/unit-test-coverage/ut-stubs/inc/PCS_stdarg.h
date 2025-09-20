@@ -40,5 +40,6 @@ typedef struct
 
 #define PCS_va_start(ap, last) ap.p = &last
 #define PCS_va_end(ap)
+#define PCS_va_arg(ap, type) (ap.p = (char *)ap.p + sizeof(type), (type) 0) /* FIXME */
 
 #endif

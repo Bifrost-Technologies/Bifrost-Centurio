@@ -190,6 +190,7 @@ int32 OS_CountSemTake_Impl(const OS_object_token_t *token)
 int32 OS_CountSemTimedWait_Impl(const OS_object_token_t *token, uint32 msecs)
 {
     rtems_status_code                   status;
+    rtems_option                        option_set;
     int                                 TimeInTicks;
     OS_impl_countsem_internal_record_t *impl;
 
@@ -200,8 +201,22 @@ int32 OS_CountSemTimedWait_Impl(const OS_object_token_t *token, uint32 msecs)
         return OS_ERROR;
     }
 
-    status = rtems_semaphore_obtain(impl->id, RTEMS_WAIT, TimeInTicks);
-    if (status == RTEMS_TIMEOUT)
+    /* Select appropriate option to wait or not
+     * - RTEMS_WAIT with 0 timeout causes RTEMS to wait forever
+     * - RTEMS_NO_WAIT returns immediately (ignores TimeInTicks)
+     */
+    if (TimeInTicks == 0)
+    {
+        option_set = RTEMS_NO_WAIT;
+    }
+    else
+    {
+        option_set = RTEMS_WAIT;
+    }
+
+    status = rtems_semaphore_obtain(impl->id, option_set, TimeInTicks);
+
+    if (status == RTEMS_TIMEOUT || (option_set == RTEMS_NO_WAIT && status == RTEMS_UNSATISFIED))
     {
         return OS_SEM_TIMEOUT;
     }
@@ -224,5 +239,5 @@ int32 OS_CountSemTimedWait_Impl(const OS_object_token_t *token, uint32 msecs)
 int32 OS_CountSemGetInfo_Impl(const OS_object_token_t *token, OS_count_sem_prop_t *count_prop)
 {
     /* RTEMS does not provide an API to get the value */
-    return OS_SUCCESS;
+    return OS_ERR_NOT_IMPLEMENTED;
 }
