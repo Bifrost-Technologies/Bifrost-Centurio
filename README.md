@@ -146,6 +146,80 @@ References
 - Each app folder contains `CMakeLists.txt`, `mission_build.cmake`, and configs under `config/`
 
 
+## Setup
+
+Ensure the following software are installed: Make, CMake, GCC, and Git. To set up the cFS BUNDLE directly from the latest set of interoperable repositories (with your working directory set to where you want to put cFS):
+
+```sh
+git clone https://github.com/Bifrost-Technologies/Bifrost-Centurio.git
+cd Bifrost-Centurio
+git submodule init
+git submodule update
+```
+
+Copy in the default makefile and definitions:
+
+```sh
+cp cfe/cmake/Makefile.sample Makefile
+cp -r cfe/cmake/sample_defs sample_defs
+```
+
+Notes
+- The above is the upstream cFS bundle flow. This repository already vendors cFS components (cFE, OSAL, PSP, lab apps) and Centurio mission apps; you can build using the standard cFS/CMake flow described below.
+- On Windows, consider building under WSL (Ubuntu) to follow the Linux-native instructions.
+
+
+## Build and Run 
+
+The cFS Framework including sample applications will build and run on the pc-linux platform support package (should run on most Linux distributions), via the steps described in the cFE CMake readme. Quick-start is below:
+
+To prep, compile, and run on the host (from the cFS directory above) as a normal user (best effort message queue depth and task priorities):
+
+```sh
+make distclean
+# (For a clean build on subsequent runs)
+make SIMULATION=native prep
+make
+make install
+cd build/exe/cpu1/
+./core-cpu1
+```
+
+You should see startup messages, and CFE_ES_Main entering OPERATIONAL state. Note the code must be executed from the `build/exe/cpu1` directory to find the startup script and shared objects.
+
+Notes
+- For a release build: `make BUILDTYPE=release OMIT_DEPRECATED=true prep`
+- Unit tests: add `ENABLE_UNIT_TESTS=true` during the prep step; run with `make test`; coverage with `make lcov`
+- Functional tests: include `ENABLE_UNIT_TESTS=true` during prep and include the `cfe_testcase` app in the runtime app configuration (.scr file)
+
+
+### Send commands, receive telemetry (C# Ground System)
+
+Use the C# Ground System (primary) under `tools/bifrost-cFS-GroundSystem/` to send commands and receive telemetry.
+
+Prerequisites
+- .NET SDK 8.0+
+- On Windows: Visual Studio 2022 with the .NET Multi-platform App UI (MAUI) workload, or CLI MAUI workloads installed
+
+Run via Visual Studio (recommended on Windows)
+1) Open `tools/bifrost-cFS-GroundSystem/bifrost-cFS-GroundSystem.sln`
+2) Select the Windows target (e.g., "Windows Machine")
+3) Build and run (F5)
+4) In the app, set the IP address of the system executing cFS (use `127.0.0.1` if running locally)
+5) Connect and enable telemetry, then send commands (e.g., NOOP) and observe command counters increment
+
+Run via .NET CLI (alternative)
+```powershell
+# From the solution folder
+dotnet build .\tools\bifrost-cFS-GroundSystem\bifrost-cFS-GroundSystem.sln
+dotnet run --project .\tools\bifrost-cFS-GroundSystem\bifrost-cFS-GroundSystem\bifrost-cFS-GroundSystem.csproj -f net8.0-windows10.0.19041.0
+```
+
+Notes
+- The legacy Python Ground System remains in `tools/cFS-GroundSystem/` for reference and debugging only.
+- For quick JSON/UDP testing without a ground UI, use the provided `tools/clients/centurio_json_client.py` or the PowerShell script `apps/ue5_bridge/test_bridge.ps1` to send bridge commands.
+
+
 ## UE5 integration notes
 
 - UE5 receives JSON telemetry via UDP on port 15002 (by default) and can send control JSON to 15001
