@@ -1,0 +1,20 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Centurio Bridge",
+  "Description": "Connects UE5 to the Bifrost-Centurio cFS ue5_bridge app and captures spacecraft OpNav imagery (PNG + GIANT metadata sidecars) for ground-system processing.",
+  "Category": "Simulation",
+  "CreatedBy": "Bifrost-Centurio2026",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "CenturioBridge",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [ "Win64", "Linux", "Mac" ]
+    }
+  ]
+}

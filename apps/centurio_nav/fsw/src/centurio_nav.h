@@ -60,5 +60,6 @@ extern CENTURIO_NAV_Data_t CENTURIO_NAV_Data;
 
 void         CENTURIO_NAV_Main(void);
 CFE_Status_t CENTURIO_NAV_Init(void);
+void         CENTURIO_NAV_RunControlLoop(float DtSec);
 
 #endif

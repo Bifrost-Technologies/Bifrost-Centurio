@@ -7,6 +7,7 @@
 #include "centurio_nav_msgids.h"
 #include "centurio_nav_fcncodes.h"
 #include <string.h>
+#include <math.h>
 
 /* Ensure version string length macro is available */
 #include "centurio_nav_internal_cfg.h"
@@ -19,6 +20,116 @@
 #endif
 
 CENTURIO_NAV_Data_t CENTURIO_NAV_Data;
+
+/* --- Control loop helpers --- */
+
+#define CENTURIO_NAV_M_PER_DEG_LAT 111320.0
+#define CENTURIO_NAV_DEG2RAD       (3.14159265358979323846 / 180.0)
+
+static float CENTURIO_NAV_WrapDeg180(float Angle)
+{
+    while (Angle > 180.0f)  { Angle -= 360.0f; }
+    while (Angle < -180.0f) { Angle += 360.0f; }
+    return Angle;
+}
+
+static float CENTURIO_NAV_SlewToward(float Current, float Target, float MaxStepDeg)
+{
+    float Err = CENTURIO_NAV_WrapDeg180(Target - Current);
+
+    if (Err > MaxStepDeg)       { Err = MaxStepDeg; }
+    else if (Err < -MaxStepDeg) { Err = -MaxStepDeg; }
+
+    return CENTURIO_NAV_WrapDeg180(Current + Err);
+}
+
+static float CENTURIO_NAV_ClampF(float Val, float Min, float Max)
+{
+    if (Val < Min) { return Min; }
+    if (Val > Max) { return Max; }
+    return Val;
+}
+
+/*
+ * Runs one control cycle: applies the ground-commanded targets (mode,
+ * position, velocity, attitude, throttle) to the vehicle nav state and
+ * integrates position from the resulting velocity.
+ */
+void CENTURIO_NAV_RunControlLoop(float DtSec)
+{
+    float MaxStepDeg = CENTURIO_NAV_ATT_SLEW_DPS * DtSec;
+
+    switch (CENTURIO_NAV_Data.Nav.SystemStatus)
+    {
+        case 2: /* GUIDANCE: fly toward commanded target position */
+        {
+            double CosLat  = cos(CENTURIO_NAV_Data.Nav.LatitudeDeg * CENTURIO_NAV_DEG2RAD);
+            double NorthM  = (CENTURIO_NAV_Data.Target.LatDeg - CENTURIO_NAV_Data.Nav.LatitudeDeg) * CENTURIO_NAV_M_PER_DEG_LAT;
+            double EastM   = (CENTURIO_NAV_Data.Target.LonDeg - CENTURIO_NAV_Data.Nav.LongitudeDeg) * CENTURIO_NAV_M_PER_DEG_LAT * CosLat;
+            double DownM   = (double)CENTURIO_NAV_Data.Nav.AltitudeM - (double)CENTURIO_NAV_Data.Target.AltM;
+            double DistM   = sqrt(NorthM * NorthM + EastM * EastM + DownM * DownM);
+
+            /* Throttle scales the allowed speed; ground must command throttle > 0 to move */
+            float SpeedLimit = CENTURIO_NAV_MAX_SPEED_MS * (CENTURIO_NAV_Data.Nav.ThrottlePercent / 100.0f);
+
+            if (DistM > CENTURIO_NAV_ARRIVAL_M && SpeedLimit > 0.0f)
+            {
+                float Speed = CENTURIO_NAV_ClampF((float)DistM * CENTURIO_NAV_POS_GAIN, 0.0f, SpeedLimit);
+
+                CENTURIO_NAV_Data.Nav.VelNorthMS = (float)(NorthM / DistM) * Speed;
+                CENTURIO_NAV_Data.Nav.VelEastMS  = (float)(EastM / DistM) * Speed;
+                CENTURIO_NAV_Data.Nav.VelDownMS  = (float)(DownM / DistM) * Speed;
+
+                /* Point the nose along the track when there is meaningful horizontal motion */
+                if (fabs(NorthM) > 0.1 || fabs(EastM) > 0.1)
+                {
+                    float HeadingDeg = (float)(atan2(EastM, NorthM) / CENTURIO_NAV_DEG2RAD);
+                    CENTURIO_NAV_Data.Nav.YawDeg = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.YawDeg, HeadingDeg, MaxStepDeg);
+                }
+            }
+            else
+            {
+                /* Arrived (or no throttle): hold position */
+                CENTURIO_NAV_Data.Nav.VelNorthMS = 0.0f;
+                CENTURIO_NAV_Data.Nav.VelEastMS  = 0.0f;
+                CENTURIO_NAV_Data.Nav.VelDownMS  = 0.0f;
+                CENTURIO_NAV_Data.Nav.YawDeg     = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.YawDeg, CENTURIO_NAV_Data.Target.YawDeg, MaxStepDeg);
+            }
+
+            CENTURIO_NAV_Data.Nav.PitchDeg = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.PitchDeg, CENTURIO_NAV_Data.Target.PitchDeg, MaxStepDeg);
+            CENTURIO_NAV_Data.Nav.RollDeg  = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.RollDeg, CENTURIO_NAV_Data.Target.RollDeg, MaxStepDeg);
+            break;
+        }
+
+        case 3: /* MANUAL: apply commanded velocity and attitude directly */
+            CENTURIO_NAV_Data.Nav.VelNorthMS = CENTURIO_NAV_ClampF(CENTURIO_NAV_Data.Target.VN_MS, -CENTURIO_NAV_MAX_SPEED_MS, CENTURIO_NAV_MAX_SPEED_MS);
+            CENTURIO_NAV_Data.Nav.VelEastMS  = CENTURIO_NAV_ClampF(CENTURIO_NAV_Data.Target.VE_MS, -CENTURIO_NAV_MAX_SPEED_MS, CENTURIO_NAV_MAX_SPEED_MS);
+            CENTURIO_NAV_Data.Nav.VelDownMS  = CENTURIO_NAV_ClampF(CENTURIO_NAV_Data.Target.VD_MS, -CENTURIO_NAV_MAX_SPEED_MS, CENTURIO_NAV_MAX_SPEED_MS);
+
+            CENTURIO_NAV_Data.Nav.YawDeg   = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.YawDeg, CENTURIO_NAV_Data.Target.YawDeg, MaxStepDeg);
+            CENTURIO_NAV_Data.Nav.PitchDeg = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.PitchDeg, CENTURIO_NAV_Data.Target.PitchDeg, MaxStepDeg);
+            CENTURIO_NAV_Data.Nav.RollDeg  = CENTURIO_NAV_SlewToward(CENTURIO_NAV_Data.Nav.RollDeg, CENTURIO_NAV_Data.Target.RollDeg, MaxStepDeg);
+            break;
+
+        default: /* INIT/SAFE: hold position, zero velocity */
+            CENTURIO_NAV_Data.Nav.VelNorthMS = 0.0f;
+            CENTURIO_NAV_Data.Nav.VelEastMS  = 0.0f;
+            CENTURIO_NAV_Data.Nav.VelDownMS  = 0.0f;
+            break;
+    }
+
+    /* Integrate position from the current velocity */
+    {
+        double CosLat = cos(CENTURIO_NAV_Data.Nav.LatitudeDeg * CENTURIO_NAV_DEG2RAD);
+        if (CosLat < 0.01) { CosLat = 0.01; } /* avoid pole singularity */
+
+        CENTURIO_NAV_Data.Nav.LatitudeDeg  += ((double)CENTURIO_NAV_Data.Nav.VelNorthMS * DtSec) / CENTURIO_NAV_M_PER_DEG_LAT;
+        CENTURIO_NAV_Data.Nav.LongitudeDeg += ((double)CENTURIO_NAV_Data.Nav.VelEastMS * DtSec) / (CENTURIO_NAV_M_PER_DEG_LAT * CosLat);
+        CENTURIO_NAV_Data.Nav.AltitudeM    -= CENTURIO_NAV_Data.Nav.VelDownMS * DtSec;
+
+        if (CENTURIO_NAV_Data.Nav.AltitudeM < 0.0f) { CENTURIO_NAV_Data.Nav.AltitudeM = 0.0f; }
+    }
+}
 
 void CENTURIO_NAV_Main(void)
 {
@@ -48,12 +159,13 @@ void CENTURIO_NAV_Main(void)
             CFE_SB_MsgId_t    MsgId;
             CFE_MSG_GetMsgId(&SBBufPtr->Msg, &MsgId);
 
-            if (CFE_SB_MsgId_Equal(MsgId, CFE_SB_ValueToMsgId(CENTURIO_NAV_SEND_HK_MID)))
+            if (CFE_SB_MsgId_Equal(MsgId, CFE_SB_ValueToMsgId(CENTURIO_NAV_WAKEUP_MID)))
             {
-                /* Update nav state slightly to simulate motion */
-                CENTURIO_NAV_Data.Nav.YawDeg += 0.5f;
-                if (CENTURIO_NAV_Data.Nav.YawDeg > 180.0f) { CENTURIO_NAV_Data.Nav.YawDeg -= 360.0f; }
-
+                /* Scheduler-driven control cycle: apply ground targets to vehicle state */
+                CENTURIO_NAV_RunControlLoop(1.0f / (float)CENTURIO_NAV_CONTROL_RATE_HZ);
+            }
+            else if (CFE_SB_MsgId_Equal(MsgId, CFE_SB_ValueToMsgId(CENTURIO_NAV_SEND_HK_MID)))
+            {
                 /* Populate HK payload */
                 CENTURIO_NAV_Data.HkTlm.Payload.CommandCounter      = CENTURIO_NAV_Data.CmdCounter;
                 CENTURIO_NAV_Data.HkTlm.Payload.CommandErrorCounter = CENTURIO_NAV_Data.ErrCounter;
@@ -98,6 +210,8 @@ void CENTURIO_NAV_Main(void)
                             CENTURIO_NAV_Data.Target.Mode      = cmd->Payload.Mode;
                             CENTURIO_NAV_Data.Nav.SystemStatus = cmd->Payload.Mode; /* simple mapping */
                             CENTURIO_NAV_Data.CmdCounter++;
+                            CFE_EVS_SendEvent(CENTURIO_NAV_MODE_INF_EID, CFE_EVS_EventType_INFORMATION,
+                                              "CENTURIO_NAV: Mode set to %u", (unsigned)cmd->Payload.Mode);
                         }
                         else
                         {
@@ -215,6 +329,12 @@ CFE_Status_t CENTURIO_NAV_Init(void)
     CENTURIO_NAV_Data.Nav.SystemStatus = 1; /* SAFE/OK */
     CENTURIO_NAV_Data.Nav.NavFixType   = 3; /* 3D */
 
+    /* Targets start at the current state so nothing moves until commanded */
+    CENTURIO_NAV_Data.Target.Mode   = CENTURIO_NAV_Data.Nav.SystemStatus;
+    CENTURIO_NAV_Data.Target.LatDeg = CENTURIO_NAV_Data.Nav.LatitudeDeg;
+    CENTURIO_NAV_Data.Target.LonDeg = CENTURIO_NAV_Data.Nav.LongitudeDeg;
+    CENTURIO_NAV_Data.Target.AltM   = CENTURIO_NAV_Data.Nav.AltitudeM;
+
     status = CFE_SB_CreatePipe(&CENTURIO_NAV_Data.CommandPipe, CENTURIO_NAV_PIPE_DEPTH, CENTURIO_NAV_PIPE_NAME);
     if (status != CFE_SUCCESS)
     {
@@ -233,6 +353,13 @@ CFE_Status_t CENTURIO_NAV_Init(void)
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(CENTURIO_NAV_SUB_CMD_ERR_EID, CFE_EVS_EventType_ERROR, "centurio_nav: Sub CMD err 0x%08lX", (unsigned long)status);
+        return status;
+    }
+
+    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(CENTURIO_NAV_WAKEUP_MID), CENTURIO_NAV_Data.CommandPipe);
+    if (status != CFE_SUCCESS)
+    {
+        CFE_EVS_SendEvent(CENTURIO_NAV_SUB_WAKEUP_ERR_EID, CFE_EVS_EventType_ERROR, "centurio_nav: Sub WAKEUP err 0x%08lX", (unsigned long)status);
         return status;
     }
 
